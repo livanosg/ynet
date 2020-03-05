@@ -7,7 +7,7 @@ PARSER.add_argument('-M', '--mode', type=str, default='train-and-eval',
                     choices=[ModeKeys.TRAIN, ModeKeys.EVAL, ModeKeys.PREDICT, 'train-and-eval', 'make-labels', 'test'],  # TODO EXPORT MODEL
                     help='Define the estimator mode')
 # Model options
-PARSER.add_argument('-load', '--load_model', type=str, default='trial_0', help=' If declared, the model saved will be loaded.')
+PARSER.add_argument('-load', '--load_model', type=str, default='', help=' If declared, the model saved will be loaded.')
 PARSER.add_argument('-brnch', '--branch', type=int, default=1, choices=[1, 2], help='Branch to train.')
 PARSER.add_argument('-dr', '--dropout', type=float, default=0.5, help='Dropout rate.')
 PARSER.add_argument('-cls', '--classes', type=int, default=2, choices=[2], help='Choose 2classes')
