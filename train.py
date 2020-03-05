@@ -11,7 +11,8 @@ from tensorflow.estimator.experimental import stop_if_no_decrease_hook
 from data_generators import data_gen
 from input_fns import train_eval_input_fn, pred_input_fn, make_labels_input_fn
 from model_fn import ynet_model_fn
-from config import paths, save_logs
+from config import paths
+from logs_script import save_logs
 
 
 def estimator_mod(args):

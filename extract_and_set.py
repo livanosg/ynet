@@ -9,8 +9,8 @@ def setup_datasets():
     setup_ircadb()
     unzip_chaos()
     split_eval()
-    os.makedirs(paths['train'])
-    os.makedirs(paths['eval'])
+    os.makedirs(paths['train'], exist_ok=True)
+    os.makedirs(paths['eval'], exist_ok=True)
     os.replace(setup_paths['chaos_train'], paths['train'] + '/Train_Sets_1')
     os.replace(setup_paths['chaos_eval'], paths['eval'] + '/Eval_Sets_1')
 
