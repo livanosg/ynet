@@ -54,10 +54,10 @@ def random_translation(input_image, label):
 def augmentations(dcm_image, grd_image):
     # Random choice of augmentation method
     all_processes = [rotate, flips, random_translation, s_n_p, sharp, gaussian_blur, contrast]
-    augm = np.random.choice(all_processes[:3])
+    augm = np.random.choice(all_processes)
     dcm_image, grd_image = augm(dcm_image, grd_image)
     if np.random.random() < 0.5:  # Data augmentation:
-        all_processes.pop(all_processes.index(augm[3:]))  # pop patients from list
+        all_processes.pop(all_processes.index(augm))  # pop patients from list
         augm = np.random.choice(all_processes)
         dcm_image, grd_image = augm(dcm_image, grd_image)
     return augm(dcm_image, grd_image)

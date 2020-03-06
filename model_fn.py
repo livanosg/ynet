@@ -38,9 +38,9 @@ def ynet_model_fn(features, labels, mode, params):
             loss_1 = custom_loss(predictions=output_1, labels=labels['label'])
             loss_2 = custom_loss(predictions=output_2, labels=one_hot_label_2)
             if params['branch'] == 1:
-                loss = loss_1 + 0 * loss_2
+                loss = loss_1 + (0 * loss_2)
             else:
-                loss = 0 * loss_1 + loss_2
+                loss = (0 * loss_1) + loss_2
         with tf.name_scope('Dice_Score_Calculation'):
             dice_output_1 = tf.contrib.metrics.f1_score(labels=labels['label'], predictions=output_1)  # check f1 for slices [:, :, :, 0] | [:, :, :, 1]
             dice_output_2 = tf.contrib.metrics.f1_score(labels=one_hot_label_2, predictions=output_2)  # check f1 for slices [:, :, :, 0] | [:, :, :, 1]
