@@ -3,7 +3,7 @@ from cv2.cv2 import GaussianBlur, filter2D, warpAffine, getRotationMatrix2D, fli
 
 
 def rotate(input_image, label):
-    angle = np.random.randint(-45, 45)
+    angle = np.random.randint(-25, 25)
     rows, cols = input_image.shape
     m = getRotationMatrix2D(center=(cols / 2, rows / 2), angle=angle, scale=1)
     return warpAffine(input_image, m, (cols, rows)), warpAffine(label, m, (cols, rows))
