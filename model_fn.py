@@ -10,7 +10,7 @@ def ynet_model_fn(features, labels, mode, params):
     loss, train_op, = None, None
     eval_metric_ops, training_hooks, evaluation_hooks = None, None, None
     predictions_dict = None
-    output_1, output_2 = ynet(input_tensor=features['dicom'], params=params)
+    output_1, output_2 = ynet(input_tensor=features['image'], params=params)
     with tf.name_scope('arg_max_outputs'):
         output_1_arg = tf.math.argmax(output_1, axis=-1)
         output_2_arg = tf.math.argmax(output_2, axis=-1)
@@ -18,9 +18,16 @@ def ynet_model_fn(features, labels, mode, params):
         final_output = tf.where(tf.equal(output_1_arg, 1), output_1_arg, tf.zeros_like(output_1_arg))
         final_output = tf.where(tf.equal(output_2_arg, 1), output_2_arg, final_output)
         final_output = tf.where(tf.equal(output_2_arg, 2), tf.zeros_like(final_output), final_output)
+        one_hot_final_output = tf.one_hot(indices=final_output, depth=2)
+    with tf.name_scope('Second_Branch_Label_Calculations'):
+        label_1 = tf.arg_max(labels['label'], -1)
+        label_2 = label_1 + output_1_arg * 2  # FN == 1, FP == 2
+        label_2 = tf.stop_gradient(label_2)
+        label_2 = tf.where(tf.equal(label_2, 3), tf.zeros_like(label_2), label_2)
+        one_hot_label_2 = tf.one_hot(indices=label_2, depth=params['classes']**2 - params['classes'] + 1)
     with tf.name_scope('Prediction_Mode_Outputs'):
         if mode == estimator.ModeKeys.PREDICT:
-            predictions_dict = {'dicom': features['dicom'],
+            predictions_dict = {'image': features['image'],
                                 'output_1': output_1_arg,
                                 'output_2': output_2_arg,
                                 'final_prediction': final_output,
@@ -28,33 +35,25 @@ def ynet_model_fn(features, labels, mode, params):
 
     if mode in (estimator.ModeKeys.TRAIN, estimator.ModeKeys.EVAL):
         with tf.name_scope('Loss_Calculation'):
+            loss_1 = custom_loss(predictions=output_1, labels=labels['label'])
+            loss_2 = custom_loss(predictions=output_2, labels=one_hot_label_2)
             if params['branch'] == 1:
-                loss_1 = custom_loss(predictions=output_1, labels=labels['label_1'])
-                loss_2 = custom_loss(predictions=output_2, labels=tf.zeros_like(output_2))
                 loss = loss_1 + 0 * loss_2
             else:
-                loss_1 = custom_loss(predictions=output_1, labels=tf.zeros_like(output_1))
-                loss_2 = custom_loss(predictions=output_2, labels=labels['label_1'])
                 loss = 0 * loss_1 + loss_2
         with tf.name_scope('Dice_Score_Calculation'):
-            if params['branch'] == 1:
-                dice_branch = tf.contrib.metrics.f1_score(labels=labels['label_1'][:, :, :, 1], predictions=output_1[:, :, :, 1])  # todo name_scope
-                dice_final = tf.contrib.metrics.f1_score(labels=labels['label_1'][:, :, :, 1], predictions=final_output)
-            else:
-                dice_branch = tf.contrib.metrics.f1_score(labels=labels['label_1'], predictions=output_2)
-                dice_out_1 = tf.contrib.metrics.f1_score(labels=labels['label_2'], predictions=output_1[:, :, :, 1])
-                dice_final = tf.contrib.metrics.f1_score(labels=labels['label_2'], predictions=final_output)
+            dice_output_1 = tf.contrib.metrics.f1_score(labels=labels['label'], predictions=output_1)  # check f1 for slices [:, :, :, 0] | [:, :, :, 1]
+            dice_output_2 = tf.contrib.metrics.f1_score(labels=one_hot_label_2, predictions=output_2)  # check f1 for slices [:, :, :, 0] | [:, :, :, 1]
+            dice_final = tf.contrib.metrics.f1_score(labels=labels['label'], predictions=one_hot_final_output)
 
-        with tf.name_scope('{}_images'.format(mode)):  # The Inputs and outputs of the algorithm
-            with tf.name_scope('Branch_{}_training'.format(params['branch'])):
-                summary.image('Input_Image', features['dicom'], max_outputs=1)
-                summary.image('Branch_{}_label'.format(params['branch']), tf.expand_dims(tf.cast(tf.math.argmax(labels['label_1'], axis=-1), dtype=tf.float32), axis=-1), max_outputs=1)
-                summary.image('Output_1', tf.expand_dims(tf.cast(output_1_arg, dtype=tf.float32), axis=-1), max_outputs=1)
-                summary.image('Output_2', tf.expand_dims(tf.cast(output_2_arg, dtype=tf.float32), axis=-1), max_outputs=1)
-                summary.image('Final', tf.expand_dims(tf.cast(final_output, dtype=tf.float32), axis=-1), max_outputs=1)
-                if params['branch'] == 2:
-                    summary.image('Branch_1_label', tf.expand_dims(tf.cast(labels['label_2'], dtype=tf.float32), axis=-1), max_outputs=1)
-
+        with tf.name_scope('Branch_{}_training'.format(params['branch'])):
+            with tf.name_scope('{}'.format(mode)):  # The Inputs and outputs of the algorithm
+                summary.image('1_Medical_Image', features['image'], max_outputs=1)
+                summary.image('2_Output_1_label'.format(params['branch']), tf.expand_dims(tf.cast(label_1 * 255, dtype=tf.uint8), axis=-1), max_outputs=1)
+                summary.image('3_Output_1', tf.expand_dims(tf.cast(output_1_arg * 255, dtype=tf.uint8), axis=-1), max_outputs=1)
+                summary.image('4_Final', tf.expand_dims(tf.cast(final_output * 255, dtype=tf.uint8), axis=-1), max_outputs=1)
+                summary.image('5_Output_2', tf.expand_dims(tf.cast(output_2_arg * 127 + 1, dtype=tf.uint8), axis=-1), max_outputs=1)
+                summary.image('6_Output_2_label'.format(params['branch']), tf.expand_dims(tf.cast(label_2, dtype=tf.uint8) * 127 + 1, axis=-1), max_outputs=1)
     if mode == estimator.ModeKeys.TRAIN:
         with tf.name_scope('Learning_Rate'):
             global_step = tf.compat.v1.train.get_or_create_global_step()
@@ -70,20 +69,14 @@ def ynet_model_fn(features, labels, mode, params):
             # final_train_op = tf.group(train_op_1, train_op_2)
 
         with tf.name_scope('Metrics'):
-            summary.scalar('Branch_{}_DSC'.format(params['branch']), dice_branch[1])
-            summary.scalar('Final_DSC', dice_final[1])
+            summary.scalar('1_Output_1_DSC'.format(params['branch']), dice_output_1[1])
+            summary.scalar('2_Final_DSC', dice_final[1])
+            summary.scalar('3_Output_2_DSC'.format(params['branch']), dice_output_2[1])
             summary.scalar('Learning_Rate', learning_rate)
-            if params['branch'] == 2:
-                summary.scalar('Branch_1_DSC', dice_out_1[1])
     if mode == estimator.ModeKeys.EVAL:
-        if params['branch'] == 1:
-            eval_metric_ops = {'Metrics/Branch_{}_DSC'.format(params['branch']): dice_branch,
-                               'Metrics/Final_DSC'.format(params['branch']): dice_final}
-
-        else:
-            eval_metric_ops = {'Metrics/Branch_2_DSC': dice_branch,
-                               'Metrics/Branch_1_DSC': dice_out_1,
-                               'Metrics/Final_DSC'.format(params['branch']): dice_final}
+        eval_metric_ops = {'Metrics/1_Output_1_DSC': dice_output_1,
+                           'Metrics/2_Final_DSC': dice_final,
+                           'Metrics/3_Output_2_DSC': dice_output_2}
 
         with tf.name_scope('Evaluation_Summary_Hook'):
             eval_summary_hook = tf.estimator.SummarySaverHook(output_dir=params['eval_path'],
