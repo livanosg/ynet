@@ -1,11 +1,10 @@
 import argparse
-from tensorflow.estimator import ModeKeys
 
 
 PARSER = argparse.ArgumentParser(description='Train a model according to given hyperparameters.')
 # Mode
 PARSER.add_argument('-M', '--mode', type=str, default='train-and-eval',
-                    choices=[ModeKeys.TRAIN, ModeKeys.EVAL, ModeKeys.PREDICT, 'train-and-eval', 'make-labels', 'test'],  # TODO EXPORT MODEL
+                    choices=['train', 'eval', 'infer', 'train-and-eval', 'make-labels', 'test'],  # TODO EXPORT MODEL
                     help='Define the estimator mode')
 # Model options
 PARSER.add_argument('-load', '--load_model', type=str, default='', help=' If declared, the model saved will be loaded.')
@@ -27,8 +26,10 @@ PARSER.add_argument('-e', '--epochs', type=int, default=200, help='Training epoc
 PARSER.add_argument('-es', '--early_stop', type=int, default=50, help='Epochs without minimizing target.')
 # Estimator configuration
 PARSER.add_argument('-sd', '--seed', type=int, default=None, help='Random seed.')
+PARSER.add_argument('-nodist', action='store_true', default=False, help='Set distribution mode.')
 ARGS = PARSER.parse_args()
 
 if __name__ == '__main__':
+    # print(ARGS.nodist)
     from train import estimator_mod
     estimator_mod(ARGS)

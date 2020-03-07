@@ -18,7 +18,7 @@ def weighted_log_dice_loss(predictions, labels):
 
     with tf.name_scope('Generalized_Dice_Loss'):
         class_frequencies = tf.reduce_sum(labels, axis=[0, 1, 2])
-        weights = tf.div(1., tf.add(tf.pow(class_frequencies, 2), epsilon()))  # epsilon()
+        weights = tf.math.divide(1., tf.add(tf.pow(class_frequencies, 2), epsilon()))  # epsilon()
         numerator = tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.multiply(predictions, labels), axis=(0, 1, 2)), weights)) + epsilon()
         denominator = tf.reduce_sum(tf.multiply(tf.reduce_sum(labels + predictions, axis=(0, 1, 2)), weights))
         loss = tf.negative(tf.math.log(tf.multiply(tf.div(numerator, denominator), 2.0)))

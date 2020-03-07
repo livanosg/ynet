@@ -20,7 +20,10 @@ def estimator_mod(args):
     # Distribution Strategy
     environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
     # TODO Implement on multi-nodes SLURM
-    strategy = tf.distribute.MirroredStrategy()
+    if args.nodist:
+        strategy = None
+    else:
+        strategy = tf.distribute.MirroredStrategy()
     # If op cannot be executed on GPU ==> assign to CPU.
     session_config = tf.compat.v1.ConfigProto(allow_soft_placement=True)  # Avoid error message if there is no gpu available.
     session_config.gpu_options.allow_growth = True  # Allow full memory usage of GPU.
@@ -74,7 +77,8 @@ def estimator_mod(args):
                        'decay_rate': args.decay_rate,
                        'decay_steps': ceil(args.epochs * steps_per_epoch / (args.decays_per_train + 1)),
                        'eval_path': eval_path,
-                       'eval_steps': eval_size}
+                       'eval_steps': eval_size,
+                       'no_distribution': args.nodist}
 
 
     # Global batch size for a step ==> _PER_REPLICA_BATCH_SIZE * strategy.num_replicas_in_sync  # TODO use it to define learning rate

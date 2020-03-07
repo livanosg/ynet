@@ -1,5 +1,5 @@
 from os import makedirs
-from tensorflow import VERSION
+from tensorflow.version import VERSION
 from config import root_dir
 
 
@@ -15,7 +15,6 @@ def save_logs(args, log_data):
             'You have chosen {} data'.format(args.modality),
             'You have chosen {} classes'.format(args.classes),
             120 * '#',
-            'Augmentation mode: {}'.format(args.augm_set),
             'Augmentation probability: {}%'.format(args.augm_prob * 100),
             'Batch size: {}'.format(args.batch_size),
             120 * '#',
