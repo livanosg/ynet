@@ -16,7 +16,6 @@ from logs_script import save_logs
 
 def estimator_mod(args):
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
-
     # Distribution Strategy
     environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
     # TODO Implement on multi-nodes SLURM

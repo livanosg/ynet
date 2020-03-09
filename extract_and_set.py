@@ -19,4 +19,5 @@ def setup_datasets():
 
 
 if __name__ == '__main__':
-    setup_datasets()
+    split_eval()
+    # setup_datasets()
