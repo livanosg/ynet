@@ -59,8 +59,7 @@ def ynet(input_tensor, params):
         device_1 = tf.device('/GPU:0')
         device_2 = tf.device('/GPU:1')
     else:
-        device_1 = nullcontext()
-        device_2 = nullcontext()
+        device_1 = device_2 = nullcontext()
     with variable_scope('Model'):
         with device_1:
             with variable_scope('Branch_1'):

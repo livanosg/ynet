@@ -3,12 +3,12 @@ import argparse
 
 PARSER = argparse.ArgumentParser(description='Train a model according to given hyperparameters.')
 # Mode
-PARSER.add_argument('-M', '--mode', type=str, default='train-and-eval',
+PARSER.add_argument('-M', '--mode', type=str, default='test',
                     choices=['train', 'eval', 'infer', 'train-and-eval', 'make-labels', 'test'],  # TODO EXPORT MODEL
                     help='Define the estimator mode')
 # Model options
 PARSER.add_argument('-load', '--load_model', type=str, default='', help=' If declared, the model saved will be loaded.')
-PARSER.add_argument('-brnch', '--branch', type=int, default=2, choices=[1, 2], help='Branch to train.')
+PARSER.add_argument('-brnch', '--branch', type=int, default=1, choices=[1, 2], help='Branch to train.')
 PARSER.add_argument('-dr', '--dropout', type=float, default=0.5, help='Dropout rate.')
 PARSER.add_argument('-cls', '--classes', type=int, default=2, choices=[2], help='Choose 2classes')
 
@@ -17,7 +17,7 @@ PARSER.add_argument('-dc', '--decays_per_train', type=int, default=1, help='Numb
 PARSER.add_argument('-dcr', '--decay_rate', type=float, default=0.1, help='Decay rate for learning rate.')
 
 # Training dataset options
-PARSER.add_argument('-modal', '--modality', type=str, default='CT', choices=['CT', 'MR', 'ALL'], help='Set type of training data.')
+PARSER.add_argument('-modal', '--modality', type=str, default='MR', choices=['CT', 'MR', 'ALL'], help='Set type of training data.')
 PARSER.add_argument('-augp', '--augm_prob', type=float, default=0.5, help='Probability for augmented image.')
 PARSER.add_argument('-batch', '--batch_size', type=int, default=2, help='Mini-batch size.')
 

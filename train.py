@@ -105,7 +105,8 @@ def estimator_mod(args):
     # Early Stopping Strategy hook *Bugged for MultiWorkerMirror
     steps_without_increase = steps_per_epoch * args.early_stop
     early_stopping = stop_if_no_decrease_hook(liver_seg, metric_name='loss', max_steps_without_decrease=steps_without_increase)
-    # Profiling hook *Bugged for MultiWorkerMirror, Configure training profiling ==> while only training, Profiler steps < steps in liver_seg.train(. . .)
+    # Profiling hook *Bugged for MultiWorkerMirror, Configure training profiling ==> while only training,
+    # Profiler steps < steps in liver_seg.train(. . .)
     profiler_hook = tf.estimator.ProfilerHook(save_steps=steps_per_epoch * 2, output_dir=model_path, show_memory=True)
 
     if args.mode in ('train-and-eval', 'test'):
