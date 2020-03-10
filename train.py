@@ -27,10 +27,9 @@ def estimator_mod(args):
     session_config = tf.compat.v1.ConfigProto(allow_soft_placement=True)  # Avoid error message if there is no gpu available.
     session_config.gpu_options.allow_growth = True  # Allow full memory usage of GPU.
     # Setting up working environment
-    warm_start = None
     if args.load_model:
         if args.resume:
-            pass
+            warm_start = None
         else:
             warm_start_from = paths['save'] + '/' + args.load_model
             if args.branch == 1:

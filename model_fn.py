@@ -42,8 +42,6 @@ def ynet_model_fn(features, labels, mode, params):
             with tf.name_scope('{}'.format(mode)):  # The Inputs and outputs of the algorithm
                 input_img = tf.math.divide(features['image'] - tf.reduce_max(features['image'], [0, 1, 2]),
                                            tf.reduce_max(features['image'], [0, 1, 2]) - tf.reduce_min(features['image'], [0, 1, 2]))
-                input_img = tf.cast(input_img * 255, tf.uint8)
-
                 output_1_img = tf.expand_dims(tf.cast(output_1_arg * 255, dtype=tf.uint8), axis=-1)
                 label_1_img = tf.expand_dims(tf.cast(label_1 * 255, dtype=tf.uint8), axis=-1)
 
