@@ -8,24 +8,24 @@ def train_eval_input_fn(mode, params):
     Inputs
     mode -> one of tf.estimator modes defined from tf.estimator.ModeKeys
     params -> arguments passed to data_generator and batch size"""
-
-    info(' Setting up {} dataset iterator...'.format(mode))
-    # Don't declare generator to a variable or else Dataset.from_generator cannot instantiate the generator
-    data_set = tf.data.Dataset.from_generator(generator=lambda: data_gen(mode, params),
-                                              output_types=(tf.float32, tf.int32),
-                                              output_shapes=(
-                                              tf.TensorShape([None, None]), tf.TensorShape([None, None])))
-    data_set = data_set.map(lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=params['classes'])))
-    data_set = data_set.map(lambda x, y: (tf.cast(x, tf.float32), y))
-    data_set = data_set.map(lambda x, y: (tf.expand_dims(x, -1), y))
-    data_set = data_set.map(lambda x, y: ({'image': x}, {'label': y}))
-    if mode == 'train':
-        data_set = data_set.batch(params['batch_size'])
-    if mode == 'eval':
-        data_set = data_set.batch(1)
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        data_set = data_set.repeat()
-    data_set = data_set.prefetch(buffer_size=-1)
+    with tf.name_scope('input_fn'):
+        info(' Setting up {} dataset iterator...'.format(mode))
+        # Don't declare generator to a variable or else Dataset.from_generator cannot instantiate the generator
+        data_set = tf.data.Dataset.from_generator(generator=lambda: data_gen(mode, params),
+                                                  output_types=(tf.float32, tf.int32),
+                                                  output_shapes=(
+                                                  tf.TensorShape([None, None]), tf.TensorShape([None, None])))
+        data_set = data_set.map(lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=params['classes'])))
+        data_set = data_set.map(lambda x, y: (tf.cast(x, tf.float32), y))
+        data_set = data_set.map(lambda x, y: (tf.expand_dims(x, -1), y))
+        data_set = data_set.map(lambda x, y: ({'image': x}, {'label': y}))
+        if mode == 'train':
+            data_set = data_set.batch(params['batch_size'])
+        if mode == 'eval':
+            data_set = data_set.batch(1)
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            data_set = data_set.repeat()
+        data_set = data_set.prefetch(buffer_size=-1)
     return data_set
 
 

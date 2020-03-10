@@ -28,6 +28,18 @@ def estimator_mod(args):
     session_config.gpu_options.allow_growth = True  # Allow full memory usage of GPU.
     # Setting up working environment
     warm_start = None
+    if args.load_model:
+        if args.resume:
+            pass
+        else:
+            warm_start_from = paths['save'] + '/' + args.load_model
+            if args.branch == 1:
+                warm_start = tf.estimator.WarmStartSettings(ckpt_to_initialize_from=warm_start_from,
+                                                            vars_to_warm_start=".*Model.*")
+            else:
+                warm_start = tf.estimator.WarmStartSettings(ckpt_to_initialize_from=warm_start_from,
+                                                            vars_to_warm_start=".*Model/Branch_1.*")
+
     if args.load_model and args.resume:
         model_path = paths['save'] + '/' + args.load_model
         eval_path = model_path + '/eval'
@@ -80,8 +92,6 @@ def estimator_mod(args):
                        'no_distribution': args.nodist,
                        'load_model': args.load_model,
                        'resume': args.resume}
-
-
 
     # Global batch size for a step ==> _PER_REPLICA_BATCH_SIZE * strategy.num_replicas_in_sync  # TODO use it to define learning rate
     # https://www.tensorflow.org/guide/distributed_training#using_tfdistributestrategy_with_estimator_limited_support

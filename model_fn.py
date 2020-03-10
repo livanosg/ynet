@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow.compat.v1.train import AdamOptimizer as Adam
 from tensorflow.python import summary
-from config import paths
 from loss_fn import custom_loss
 from tensorflow.compat.v1 import estimator
 from archit import ynet
@@ -12,14 +11,6 @@ def ynet_model_fn(features, labels, mode, params):
     eval_metric_ops, training_hooks, evaluation_hooks = None, None, None
     predictions_dict = None
     output_1, output_2 = ynet(input_tensor=features['image'], params=params)
-    model_var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/')
-    if params['load_model']:
-        if params['resume']:
-            pass
-        else:
-            model_path = paths['save'] + '/' + params['load_model']
-            load_path = tf.train.latest_checkpoint(model_path)
-            tf.compat.v1.train.init_from_checkpoint(load_path, assignment_map={v.name.split(':')[0]: v for v in model_var_list})
     with tf.name_scope('arg_max_outputs'):
         output_1_arg = tf.math.argmax(output_1, axis=-1)
         output_2_arg = tf.math.argmax(output_2, axis=-1)
@@ -77,7 +68,9 @@ def ynet_model_fn(features, labels, mode, params):
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_1/')
             else:
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_2/')
-            train_op = Adam(learning_rate=learning_rate).minimize(loss=loss, global_step=global_step, var_list=var_list)
+            optimizer = Adam(learning_rate=learning_rate)  #.minimize(loss=loss, global_step=global_step, var_list=var_list)
+            grads = optimizer.compute_gradients(loss=loss, var_list=var_list)
+            train_op = optimizer.apply_gradients(grads_and_vars=grads, global_step=global_step)
             # final_train_op = tf.group(train_op_1, train_op_2)
     if mode == estimator.ModeKeys.TRAIN:
         with tf.name_scope('Metrics'):
