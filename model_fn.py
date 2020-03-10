@@ -1,19 +1,25 @@
-from contextlib import nullcontext
-
 import tensorflow as tf
 from tensorflow.compat.v1.train import AdamOptimizer as Adam
 from tensorflow.python import summary
+from config import paths
 from loss_fn import custom_loss
 from tensorflow.compat.v1 import estimator
 from archit import ynet
 
 
 def ynet_model_fn(features, labels, mode, params):
-
     loss, train_op, = None, None
     eval_metric_ops, training_hooks, evaluation_hooks = None, None, None
     predictions_dict = None
     output_1, output_2 = ynet(input_tensor=features['image'], params=params)
+    model_var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/')
+    if params['load_model']:
+        if params['resume']:
+            pass
+        else:
+            model_path = paths['save'] + '/' + params['load_model']
+            load_path = tf.train.latest_checkpoint(model_path)
+            tf.compat.v1.train.init_from_checkpoint(load_path, assignment_map={v.name.split(':')[0]: v for v in model_var_list})
     with tf.name_scope('arg_max_outputs'):
         output_1_arg = tf.math.argmax(output_1, axis=-1)
         output_2_arg = tf.math.argmax(output_2, axis=-1)
@@ -30,12 +36,11 @@ def ynet_model_fn(features, labels, mode, params):
             label_2 = tf.where(tf.equal(label_2, 3), tf.zeros_like(label_2), label_2)
             one_hot_label_2 = tf.one_hot(indices=label_2, depth=params['classes'] ** 2 - params['classes'] + 1)
         with tf.name_scope('Loss_Calculation'):
-            loss_1 = custom_loss(predictions=output_1, labels=labels['label'])
-            loss_2 = custom_loss(predictions=output_2, labels=one_hot_label_2)
-        if params['branch'] == 1:
-            loss = loss_1 + (0 * loss_2)
-        else:
-            loss = (0 * loss_1) + loss_2
+            if params['branch'] == 1:
+                loss = custom_loss(predictions=output_1, labels=labels['label'])
+            else:
+                loss = custom_loss(predictions=output_2, labels=one_hot_label_2)
+
         with tf.name_scope('Dice_Score_Calculation'):
             dice_output_1 = tf.contrib.metrics.f1_score(labels=labels['label'], predictions=output_1)
             dice_output_2 = tf.contrib.metrics.f1_score(labels=one_hot_label_2, predictions=output_2)
@@ -67,9 +72,9 @@ def ynet_model_fn(features, labels, mode, params):
             learning_rate = tf.compat.v1.train.exponential_decay(params['lr'], global_step=global_step,
                                                                  decay_steps=params['decay_steps'],
                                                                  decay_rate=params['decay_rate'], staircase=False)
-        with tf.name_scope('Optimizer_conf'):
+        with tf.name_scope('Optimizer'):
             if params['branch'] == 1:
-                var_list = None
+                var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_1/')
             else:
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_2/')
             train_op = Adam(learning_rate=learning_rate).minimize(loss=loss, global_step=global_step, var_list=var_list)
@@ -80,6 +85,7 @@ def ynet_model_fn(features, labels, mode, params):
             summary.scalar('2_Final_DSC', dice_final[1])
             summary.scalar('3_Output_2_DSC', dice_output_2[1])
             summary.scalar('Learning_Rate', learning_rate)
+
     if mode == estimator.ModeKeys.EVAL:
         eval_metric_ops = {'Metrics/1_Output_1_DSC': dice_output_1,
                            'Metrics/2_Final_DSC': dice_final,

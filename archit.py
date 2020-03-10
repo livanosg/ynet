@@ -56,8 +56,8 @@ def ynet(input_tensor, params):
     dropout = params['dropout']
     classes = params['classes']
     if params['no_distribution']:
-        device_1 = tf.device('/GPU:0')
-        device_2 = tf.device('/GPU:1')
+        device_1 = tf.device('/CPU:0')
+        device_2 = tf.device('/CPU:0')
     else:
         device_1 = device_2 = nullcontext()
     with variable_scope('Model'):

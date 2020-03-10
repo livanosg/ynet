@@ -10,16 +10,15 @@ def train_eval_input_fn(mode, params):
     params -> arguments passed to data_generator and batch size"""
 
     info(' Setting up {} dataset iterator...'.format(mode))
-    with tf.name_scope('Feeding_Mechanism'):
-        # Don't declare generator to a variable or else Dataset.from_generator cannot instantiate the generator
-        data_set = tf.data.Dataset.from_generator(generator=lambda: data_gen(mode, params),
-                                                  output_types=(tf.float32, tf.int32),
-                                                  output_shapes=(
-                                                  tf.TensorShape([None, None]), tf.TensorShape([None, None])))
-        data_set = data_set.map(lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=params['classes'])))
-        data_set = data_set.map(lambda x, y: (tf.cast(x, tf.float32), y))
-        data_set = data_set.map(lambda x, y: (tf.expand_dims(x, -1), y))
-        data_set = data_set.map(lambda x, y: ({'image': x}, {'label': y}))
+    # Don't declare generator to a variable or else Dataset.from_generator cannot instantiate the generator
+    data_set = tf.data.Dataset.from_generator(generator=lambda: data_gen(mode, params),
+                                              output_types=(tf.float32, tf.int32),
+                                              output_shapes=(
+                                              tf.TensorShape([None, None]), tf.TensorShape([None, None])))
+    data_set = data_set.map(lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=params['classes'])))
+    data_set = data_set.map(lambda x, y: (tf.cast(x, tf.float32), y))
+    data_set = data_set.map(lambda x, y: (tf.expand_dims(x, -1), y))
+    data_set = data_set.map(lambda x, y: ({'image': x}, {'label': y}))
     if mode == 'train':
         data_set = data_set.batch(params['batch_size'])
     if mode == 'eval':

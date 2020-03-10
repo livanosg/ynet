@@ -15,7 +15,7 @@ from logs_script import save_logs
 
 
 def estimator_mod(args):
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
     # Distribution Strategy
     environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
     # TODO Implement on multi-nodes SLURM
@@ -28,7 +28,7 @@ def estimator_mod(args):
     session_config.gpu_options.allow_growth = True  # Allow full memory usage of GPU.
     # Setting up working environment
     warm_start = None
-    if args.load_model:
+    if args.load_model and args.resume:
         model_path = paths['save'] + '/' + args.load_model
         eval_path = model_path + '/eval'
     else:
@@ -60,8 +60,8 @@ def estimator_mod(args):
     input_fn_params['batch_size'] = args.batch_size
 
     if args.mode == 'test':
-        train_size = 5
-        eval_size = 2
+        train_size = 100
+        eval_size = 30
     else:
         train_size = len(list(data_gen(dataset=tf.estimator.ModeKeys.TRAIN, params=input_fn_params, only_paths=True)))
         eval_size = len(list(data_gen(dataset=tf.estimator.ModeKeys.EVAL, params=input_fn_params, only_paths=True)))
@@ -77,7 +77,10 @@ def estimator_mod(args):
                        'decay_steps': ceil(args.epochs * steps_per_epoch / (args.decays_per_train + 1)),
                        'eval_path': eval_path,
                        'eval_steps': eval_size,
-                       'no_distribution': args.nodist}
+                       'no_distribution': args.nodist,
+                       'load_model': args.load_model,
+                       'resume': args.resume}
+
 
 
     # Global batch size for a step ==> _PER_REPLICA_BATCH_SIZE * strategy.num_replicas_in_sync  # TODO use it to define learning rate

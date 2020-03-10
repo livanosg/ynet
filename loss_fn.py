@@ -1,13 +1,13 @@
-from tensorflow.keras.backend import epsilon
 import tensorflow as tf
+eps = 1e-15
 
 
 def weighted_crossentropy(predictions, labels):
     """weighted softmax_cross_entropy"""
     with tf.name_scope('Weighted_Crossentropy'):
         class_frequencies = tf.reduce_sum(labels, axis=[0, 1, 2], keepdims=True)
-        weights = tf.div(tf.reduce_sum(class_frequencies)-class_frequencies, tf.add(class_frequencies, epsilon()))
-        wce = tf.reduce_sum(weights * labels * tf.math.log(predictions + epsilon()))
+        weights = tf.div(tf.reduce_sum(class_frequencies)-class_frequencies, tf.add(class_frequencies, eps))
+        wce = tf.reduce_sum(weights * labels * tf.math.log(predictions + eps))
         wce = tf.negative(tf.div(wce, tf.reduce_sum(class_frequencies)))
         return wce
 
@@ -18,9 +18,9 @@ def weighted_log_dice_loss(predictions, labels):
 
     with tf.name_scope('Generalized_Dice_Loss'):
         class_frequencies = tf.reduce_sum(labels, axis=[0, 1, 2])
-        weights = tf.math.divide(1., tf.add(tf.pow(class_frequencies, 2), epsilon()))  # epsilon()
-        numerator = tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.multiply(predictions, labels), axis=(0, 1, 2)), weights)) + epsilon()
-        denominator = tf.reduce_sum(tf.multiply(tf.reduce_sum(labels + predictions, axis=(0, 1, 2)), weights))
+        weights = tf.math.divide(1., tf.add(tf.pow(class_frequencies, 2), eps))  # epsilon()
+        numerator = tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.multiply(predictions, labels), axis=(0, 1, 2)), weights)) + eps
+        denominator = tf.reduce_sum(tf.multiply(tf.reduce_sum(labels + predictions, axis=(0, 1, 2)), weights)) + eps
         loss = tf.negative(tf.math.log(tf.multiply(tf.div(numerator, denominator), 2.0)))
     return loss
 

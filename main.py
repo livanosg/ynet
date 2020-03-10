@@ -7,8 +7,10 @@ PARSER.add_argument('-M', '--mode', type=str, default='test',
                     choices=['train', 'eval', 'infer', 'train-and-eval', 'make-labels', 'test'],  # TODO EXPORT MODEL
                     help='Define the estimator mode')
 # Model options
-PARSER.add_argument('-load', '--load_model', type=str, default='', help=' If declared, the model saved will be loaded.')
-PARSER.add_argument('-brnch', '--branch', type=int, default=1, choices=[1, 2], help='Branch to train.')
+PARSER.add_argument('-load', '--load_model', type=str, default='MRynet', help=' Model folder to load.')
+PARSER.add_argument('-resume', action='store_true', default=False, help='Continue training from loaded model.')
+
+PARSER.add_argument('-brnch', '--branch', type=int, default=2, choices=[1, 2], help='Branch to train.')
 PARSER.add_argument('-dr', '--dropout', type=float, default=0.5, help='Dropout rate.')
 PARSER.add_argument('-cls', '--classes', type=int, default=2, choices=[2], help='Choose 2classes')
 
