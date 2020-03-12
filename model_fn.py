@@ -1,6 +1,8 @@
 import tensorflow as tf
-from tensorflow.compat.v1.train import AdamOptimizer as Adam
+from tensorflow.compat.v1.train import AdamOptimizer
 from tensorflow.python import summary
+
+from help_fn import cyclic_learning_rate
 from loss_fn import custom_loss
 from tensorflow.compat.v1 import estimator
 from archit import ynet
@@ -58,15 +60,16 @@ def ynet_model_fn(features, labels, mode, params):
     if mode == estimator.ModeKeys.TRAIN:
         with tf.name_scope('Learning_Rate'):
             global_step = tf.compat.v1.train.get_or_create_global_step()
-            learning_rate = tf.compat.v1.train.exponential_decay(params['lr'], global_step=global_step,
-                                                                 decay_steps=params['decay_steps'],
-                                                                 decay_rate=params['decay_rate'], staircase=False)
+            # learning_rate = tf.compat.v1.train.exponential_decay(params['lr'], global_step=global_step,
+            #                                                      decay_steps=params['decay_steps'],
+            #                                                      decay_rate=params['decay_rate'], staircase=False)
+            learning_rate = cyclic_learning_rate(global_step, learning_rate=params['lr'], max_lr=5. * params['lr'], step_size=30., gamma=0.99994, mode='triangular', name=None)
         with tf.name_scope('Optimizer'):
             if params['branch'] == 1:
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_1/')
             else:
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_2/')
-            optimizer = Adam(learning_rate=learning_rate)  #.minimize(loss=loss, global_step=global_step, var_list=var_list)
+            optimizer = AdamOptimizer(learning_rate=learning_rate)
             grads = optimizer.compute_gradients(loss=loss, var_list=var_list)
             train_op = optimizer.apply_gradients(grads_and_vars=grads, global_step=global_step)
             # final_train_op = tf.group(train_op_1, train_op_2)

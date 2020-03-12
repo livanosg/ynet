@@ -3,11 +3,10 @@ import argparse
 
 PARSER = argparse.ArgumentParser(description='Train a model according to given hyperparameters.')
 # Mode
-PARSER.add_argument('-M', '--mode', type=str, default='test',
-                    choices=['train', 'eval', 'infer', 'train-and-eval', 'make-labels', 'test'],  # TODO EXPORT MODEL
+PARSER.add_argument('-M', '--mode', type=str, default='lr',choices=['train', 'eval', 'infer', 'train-and-eval', 'make-labels', 'test', 'lr'],  # TODO EXPORT MODEL
                     help='Define the estimator mode')
 # Model options
-PARSER.add_argument('-load', '--load_model', type=str, default='MRynet', help=' Model folder to load.')
+PARSER.add_argument('-load', '--load_model', type=str, default='MR1', help=' Model folder to load.')
 PARSER.add_argument('-resume', action='store_true', default=False, help='Continue training from loaded model.')
 
 PARSER.add_argument('-brnch', '--branch', type=int, default=2, choices=[1, 2], help='Branch to train.')

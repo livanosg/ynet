@@ -50,7 +50,7 @@ def estimator_mod(args):
         eval_path = model_path + '/eval'
 
     input_fn_params = {}
-    if args.mode in (tf.estimator.ModeKeys.TRAIN, 'train-and-eval', 'test'):
+    if args.mode in (tf.estimator.ModeKeys.TRAIN, 'train-and-eval', 'test', 'lr'):
         input_fn_params['shuffle'] = True
         input_fn_params['batch_size'] = args.batch_size
 
@@ -79,7 +79,7 @@ def estimator_mod(args):
 
     steps_per_epoch = ceil(train_size / args.batch_size)
     max_training_steps = args.epochs * steps_per_epoch
-
+    save_summary_steps = steps_per_epoch
     model_fn_params = {'branch': args.branch,
                        'dropout': args.dropout,
                        'classes': args.classes,
@@ -91,8 +91,13 @@ def estimator_mod(args):
                        'no_distribution': args.nodist,
                        'load_model': args.load_model,
                        'resume': args.resume}
+    if args.mode == 'lr':
+        model_fn_params['lr'] = 0.0001
+        model_fn_params['decay_rate'] = 0.95
+        model_fn_params['decay_steps'] = 30
+        save_summary_steps = args.batch_size
 
-    # Global batch size for a step ==> _PER_REPLICA_BATCH_SIZE * strategy.num_replicas_in_sync  # TODO use it to define learning rate
+        # Global batch size for a step ==> _PER_REPLICA_BATCH_SIZE * strategy.num_replicas_in_sync  # TODO use it to define learning rate
     # https://www.tensorflow.org/guide/distributed_training#using_tfdistributestrategy_with_estimator_limited_support
     # Your input_fn is called once per worker, thus giving one dataset per worker. Then one batch from that dataset
     # is fed to one replica on that worker, thereby consuming N batches for N replicas on 1 worker. In other words,
@@ -100,7 +105,7 @@ def estimator_mod(args):
     # batch size for a step can be obtained as PER_REPLICA_BATCH_SIZE * strategy.num_replicas_in_sync.
 
     configuration = tf.estimator.RunConfig(tf_random_seed=args.seed,
-                                           save_summary_steps=steps_per_epoch,
+                                           save_summary_steps=save_summary_steps,
                                            keep_checkpoint_max=args.early_stop + 2,
                                            save_checkpoints_steps=steps_per_epoch,
                                            log_step_count_steps=ceil(steps_per_epoch / 2),
@@ -135,9 +140,9 @@ def estimator_mod(args):
              'Metrics and checkpoints are saved at:\n'
              '{}\n ----------'.format(model_path))
 
-    if args.mode == tf.estimator.ModeKeys.TRAIN:
+    if args.mode in (tf.estimator.ModeKeys.TRAIN, 'lr'):
         liver_seg.train(input_fn=lambda: train_eval_input_fn(mode=tf.estimator.ModeKeys.TRAIN, params=input_fn_params),
-                        steps=max_training_steps, hooks=[profiler_hook, early_stopping])
+                        steps=max_training_steps, hooks=[early_stopping])
 
     if args.mode == tf.estimator.ModeKeys.EVAL:
         results = liver_seg.evaluate(input_fn=lambda: train_eval_input_fn(mode=tf.estimator.ModeKeys.EVAL, params=input_fn_params))
