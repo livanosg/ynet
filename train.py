@@ -10,14 +10,14 @@ from tensorflow.estimator.experimental import stop_if_no_decrease_hook
 from data_generators import data_gen
 from input_fns import train_eval_input_fn, pred_input_fn
 from model_fn import ynet_model_fn
-from config import paths
+from config import paths, root_dir
 from logs_script import save_logs
 
 
 def estimator_mod(args):
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
     # Distribution Strategy
-    environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
+    environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     # TODO Implement on multi-nodes SLURM
     if args.nodist:
         strategy = None
@@ -43,6 +43,7 @@ def estimator_mod(args):
         model_path = paths['save'] + '/' + args.load_model
         eval_path = model_path + '/eval'
     else:
+        warm_start = None
         trial = 0
         while os.path.exists(paths['save'] + '/{}_trial_{}'.format(args.modality, trial)):
             trial += 1
@@ -70,7 +71,7 @@ def estimator_mod(args):
     input_fn_params['augm_prob'] = args.augm_prob
     input_fn_params['batch_size'] = args.batch_size
 
-    if args.mode == 'test':
+    if args.mode in ('lr', 'test'):
         train_size = 100
         eval_size = 30
     else:
@@ -85,6 +86,7 @@ def estimator_mod(args):
                        'classes': args.classes,
                        'lr': args.lr,
                        'decay_rate': args.decay_rate,
+                       'steps_per_epoch': steps_per_epoch,
                        'decay_steps': ceil(args.epochs * steps_per_epoch / (args.decays_per_train + 1)),
                        'eval_path': eval_path,
                        'eval_steps': eval_size,

@@ -111,7 +111,7 @@ def cyclic_learning_rate(global_step,
             a1 = math_ops.maximum(0., math_ops.subtract(1., x))
             a2 = math_ops.subtract(max_lr, learning_rate)
             clr = math_ops.multiply(a1, a2)
-            clr = tf.where(tf.equal(counter, cycle + 0.5), -clr, clr)
+            # clr = tf.where(tf.equal(counter, cycle + 0.5), -clr, clr)
 
             if mode == 'triangular2':
                 clr = math_ops.divide(clr, math_ops.cast(math_ops.pow(2, math_ops.cast(cycle - 1, tf.int32)), tf.float32))

@@ -1,11 +1,10 @@
 import tensorflow as tf
-from tensorflow.compat.v1.train import AdamOptimizer
+from tensorflow.compat.v1.train import AdamOptimizer as Adam
 from tensorflow.python import summary
-
-from help_fn import cyclic_learning_rate
-from loss_fn import custom_loss
 from tensorflow.compat.v1 import estimator
 from archit import ynet
+from help_fn import cyclic_learning_rate
+from loss_fn import custom_loss
 
 
 def ynet_model_fn(features, labels, mode, params):
@@ -39,7 +38,6 @@ def ynet_model_fn(features, labels, mode, params):
             dice_output_2 = tf.contrib.metrics.f1_score(labels=one_hot_label_2, predictions=output_2)
             dice_final = tf.contrib.metrics.f1_score(labels=labels['label'], predictions=one_hot_final_output)
 
-    if mode in (estimator.ModeKeys.TRAIN, estimator.ModeKeys.EVAL):
         with tf.name_scope('Branch_{}_training'.format(params['branch'])):
             with tf.name_scope('{}'.format(mode)):  # The Inputs and outputs of the algorithm
                 input_img = tf.math.divide(features['image'] - tf.reduce_max(features['image'], [0, 1, 2]),
@@ -51,29 +49,30 @@ def ynet_model_fn(features, labels, mode, params):
                 label_2_img = tf.expand_dims(tf.cast(label_2, dtype=tf.uint8) * 127 + 1, axis=-1)
 
                 final_output_img = tf.expand_dims(tf.cast(final_output * 255, dtype=tf.uint8), axis=-1)
-                summary.image('1_Medical_Image', input_img, max_outputs=1)
-                summary.image('2_Output_1_label', label_1_img, max_outputs=1)
-                summary.image('3_Output_1', output_1_img, max_outputs=1)
-                summary.image('4_Final', final_output_img, max_outputs=1)
-                summary.image('5_Output_2', output_2_img, max_outputs=1)
-                summary.image('6_Output_2_label', label_2_img, max_outputs=1)
+            summary.image('1_Medical_Image', input_img, max_outputs=1)
+            summary.image('2_Output_1_label', label_1_img, max_outputs=1)
+            summary.image('3_Output_1', output_1_img, max_outputs=1)
+            summary.image('4_Final', final_output_img, max_outputs=1)
+            summary.image('5_Output_2', output_2_img, max_outputs=1)
+            summary.image('6_Output_2_label', label_2_img, max_outputs=1)
+
     if mode == estimator.ModeKeys.TRAIN:
         with tf.name_scope('Learning_Rate'):
             global_step = tf.compat.v1.train.get_or_create_global_step()
             # learning_rate = tf.compat.v1.train.exponential_decay(params['lr'], global_step=global_step,
             #                                                      decay_steps=params['decay_steps'],
             #                                                      decay_rate=params['decay_rate'], staircase=False)
-            learning_rate = cyclic_learning_rate(global_step, learning_rate=params['lr'], max_lr=5. * params['lr'], step_size=30., gamma=0.99994, mode='triangular', name=None)
+            learning_rate = cyclic_learning_rate(global_step, learning_rate=params['lr'], max_lr=10 * params['lr'],
+                                                 step_size=params['steps_per_epoch'] * 5, mode='triangular', name=None)
         with tf.name_scope('Optimizer'):
             if params['branch'] == 1:
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_1/')
             else:
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_2/')
-            optimizer = AdamOptimizer(learning_rate=learning_rate)
+            optimizer = Adam(learning_rate=learning_rate)
             grads = optimizer.compute_gradients(loss=loss, var_list=var_list)
             train_op = optimizer.apply_gradients(grads_and_vars=grads, global_step=global_step)
             # final_train_op = tf.group(train_op_1, train_op_2)
-    if mode == estimator.ModeKeys.TRAIN:
         with tf.name_scope('Metrics'):
             summary.scalar('1_Output_1_DSC', dice_output_1[1])
             summary.scalar('2_Final_DSC', dice_final[1])
@@ -85,11 +84,10 @@ def ynet_model_fn(features, labels, mode, params):
                            'Metrics/2_Final_DSC': dice_final,
                            'Metrics/3_Output_2_DSC': dice_output_2}
 
-        with tf.name_scope('Evaluation_Summary_Hook'):
-            eval_summary_hook = tf.estimator.SummarySaverHook(output_dir=params['eval_path'],
-                                                              summary_op=summary.merge_all(),
-                                                              save_steps=params['eval_steps'])
-            evaluation_hooks = [eval_summary_hook]
+        eval_summary_hook = tf.estimator.SummarySaverHook(output_dir=params['eval_path'],
+                                                          summary_op=summary.merge_all(),
+                                                          save_steps=params['eval_steps'])
+        evaluation_hooks = [eval_summary_hook]
 
     if mode == estimator.ModeKeys.PREDICT:
         predictions_dict = {'image': features['image'],
