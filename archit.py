@@ -93,8 +93,11 @@ def ynet(input_tensor, params):
                 with name_scope('Up2_3'):
                     branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_3, filters=128, dropout=dropout)
                 with name_scope('Up2_4'):
-                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=64, dropout=dropout)
-                with name_scope('Output2'):
-                    branch_2 = Conv2D(filters=classes ** 2 - classes + 1, kernel_size=1, padding='same')(branch_2)
+                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=128, dropout=dropout)
+
+                with name_scope('Merger'):
+                    output = convolution_layer(input_tensor=branch_2, filters=64, dropout=dropout)
+                    output = convolution_layer(input_tensor=output, filters=32, dropout=dropout)
+                    branch_2 = Conv2D(filters=classes ** 2 - classes + 1, kernel_size=1, padding='same')(output)
                     predictions2 = Softmax(axis=-1)(branch_2)
     return predictions1, predictions2

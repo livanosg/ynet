@@ -15,9 +15,8 @@ def train_eval_input_fn(mode, params):
                                                   output_types=(tf.float32, tf.int32),
                                                   output_shapes=(
                                                   tf.TensorShape([None, None]), tf.TensorShape([None, None])))
-        data_set = data_set.map(lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=params['classes'])))
-        data_set = data_set.map(lambda x, y: (tf.cast(x, tf.float32), y))
-        data_set = data_set.map(lambda x, y: (tf.expand_dims(x, -1), y))
+        data_set = data_set.map(lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=params['classes'], dtype=tf.float32)))
+        data_set = data_set.map(lambda x, y: (tf.expand_dims(tf.cast(x, tf.float32), -1), y))
         data_set = data_set.map(lambda x, y: ({'image': x}, {'label': y}))
         if mode == 'train':
             data_set = data_set.batch(params['batch_size'])

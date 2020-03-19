@@ -65,18 +65,19 @@ def data_gen(dataset, params, only_paths=False):
     else:
         for dicom_path, label_path in data_paths:
             dicom, label = dcmread(dicom_path).pixel_array, imread(label_path, 0)
-            if params['modality'] == 'MR':
+            if 'MR' in label_path:
                 label[label != 63] = 0
             if dataset == 'train':  # Data augmentation
+                if params['modality'] == 'MR':
+                    resize = 320 - dicom.shape[0]
+                if params['modality'] == 'ALL':
+                    resize = 512 - dicom.shape[0]
                 if params['modality'] in ('MR', 'ALL'):
-                    if params['modality'] == 'MR':
-                        resize = 320 - dicom.shape[0]
-                    else:
-                        resize = 512 - dicom.shape[0]
                     dicom = np.pad(dicom, [int(resize / 2)], mode='constant', constant_values=np.min(dicom))
                     label = np.pad(label, [int(resize / 2)], mode='constant', constant_values=np.min(label))
                 if np.random.random() < params['augm_prob']:
                     dicom, label = augmentations(dcm_image=dicom, grd_image=label)
+
             dicom = (dicom - np.mean(dicom)) / np.std(dicom)  # Normalize
             label[label > 0] = 1
             yield dicom, label

@@ -15,7 +15,7 @@ setup_paths = {'irdcab_train': dataset_root + '/Train_Sets_2',
 
 paths = {'train': dataset_root + '/Train_Sets',
          'eval': dataset_root + '/Eval_Sets',
-         'infer': dataset_root + '/Test_Sets',
+         'pred': dataset_root + '/Test_Sets',
          'save': root_dir + '/saves',
          'save_pred': root_dir + '/predictions'}
 
