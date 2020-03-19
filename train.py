@@ -82,7 +82,7 @@ def estimator_mod(args):
                        'decay_steps': ceil(args.epochs * steps_per_epoch / (args.decays_per_train + 1)),
                        'eval_path': eval_path,
                        'eval_steps': eval_size,
-                       'no_distribution': args.nodist,
+                       'distribution': args.nodist,
                        'load_model': args.load_model,
                        'resume': args.resume}
     if args.mode == 'lr':

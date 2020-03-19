@@ -123,23 +123,20 @@ def cyclic_learning_rate(global_step,
             cyclic_lr = cyclic_lr()
         return cyclic_lr
 
-# global_step = range(50)
-# clr = []
-# for i in global_step:
-#     step_size = 10
-#     learning_rate = 0.0001
-#     max_lr = 0.0005
-#     counter = 1 + i / (2 * step_size)
-#     cycle = np.floor(1 + i / (2 * step_size))
-#     x = abs((i / step_size) - 2 * cycle + 1)
-#     print(counter)
-#
-#     if counter % (cycle + 0.5) == 0:
-#         x -= 1.
-#         c_lr = -(learning_rate + (max_lr - learning_rate) * max(0, 1 - x))
-#     else:
-#         c_lr = learning_rate + (max_lr - learning_rate) * max(0, 1 - x)
-#     clr.append(c_lr)
-#
-# plt.plot(global_step, clr)
-# plt.show()
+
+def f1(y_true, y_pred,):
+
+    y_true = tf.cast(y_true, tf.float64)
+    y_pred = tf.cast(y_pred, tf.float64)
+
+    TP = tf.count_nonzero(y_pred * y_true, axis=0)
+    FP = tf.count_nonzero(y_pred * (y_true - 1), axis=0)
+    FN = tf.count_nonzero((y_pred - 1) * y_true, axis=0)
+    precision = TP / ((TP + FP) + 1)
+    recall = TP / ((TP + FN) + 1)
+    f1 = 2 * precision * recall / (precision + recall)
+    weights = tf.reduce_sum(y_true, axis=0)
+    weights /= tf.reduce_sum(weights)
+    # f1 = tf.reduce_sum(f1 * weights)
+    f1, f1_update_op = tf.metrics.mean(f1)
+    return f1, f1_update_op
