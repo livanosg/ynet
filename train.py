@@ -21,11 +21,13 @@ def estimator_mod(args):
     environ['TF_XLA_FLAGS'] = "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit " + root_dir
     # TODO Implement on multi-nodes SLURM
     global_batch = args.batch_size
+
     if args.nodist:
         strategy = None
     else:
         strategy = tf.distribute.MirroredStrategy()
         global_batch = args.batch_size * strategy.num_replicas_in_sync
+
     # If op cannot be executed on GPU ==> assign to CPU.
     session_config = tf.compat.v1.ConfigProto(allow_soft_placement=True)  # Avoid error message if there is no gpu available.
     session_config.gpu_options.allow_growth = True  # Allow full memory usage of GPU.

@@ -27,7 +27,7 @@ PARSER.add_argument('-e', '--epochs', type=int, default=200, help='Training epoc
 PARSER.add_argument('-es', '--early_stop', type=int, default=20, help='Epochs without minimizing target.')
 # Estimator configuration
 PARSER.add_argument('-sd', '--seed', type=int, default=None, help='Random seed.')
-PARSER.add_argument('-nodist', action='store_true', default=False, help='Set distribution mode.')
+PARSER.add_argument('-nodist', action='store_false', default=True, help='Set distribution mode.')
 ARGS = PARSER.parse_args()
 
 if __name__ == '__main__':

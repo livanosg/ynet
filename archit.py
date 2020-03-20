@@ -57,46 +57,48 @@ def ynet(input_tensor, params):
     dropout = params['dropout']
     classes = params['classes']
     if params['distribution']:
+        device_1 = device_2 = nullcontext()
+    else:
         device_1 = tf.device('/GPU:0')
         device_2 = tf.device('/GPU:1')
-    else:
-        device_1 = device_2 = nullcontext()
-    with variable_scope('Model'):
-        with variable_scope('Branch_1'):
-            with name_scope('Down_1'):
-                branch_1, connection_1 = down_layer(input_tensor=input_tensor, filters=64, dropout=dropout)
-            with name_scope('Down_2'):
-                branch_1, connection_2 = down_layer(input_tensor=branch_1, filters=128, dropout=dropout)
-            with name_scope('Down_3'):
-                branch_1, connection_3 = down_layer(input_tensor=branch_1, filters=256, dropout=dropout)
-            with name_scope('Down_4'):
-                branch_1, connection_4 = down_layer(input_tensor=branch_1, filters=512, dropout=dropout)
-            with name_scope('Bridge'):
-                bridge = convolution_layer(input_tensor=branch_1, filters=1024, dropout=dropout)
-            with name_scope('Up1_1'):
-                branch_1_1 = upconv_layer(input_tensor=bridge, connection=connection_4, filters=512, dropout=dropout)
-            with name_scope('Up1_2'):
-                branch_1_2 = upconv_layer(input_tensor=branch_1_1, connection=connection_3, filters=256, dropout=dropout)
-            with name_scope('Up1_3'):
-                branch_1_3 = upconv_layer(input_tensor=branch_1_2, connection=connection_2, filters=128, dropout=dropout)
-            with name_scope('Up1_4'):
-                branch_1_4 = upconv_layer(input_tensor=branch_1_3, connection=connection_1, filters=64, dropout=dropout)
-            with name_scope('Output1'):
-                logits = Conv2D(filters=classes, kernel_size=1, padding='same')(branch_1_4)
-                predictions1 = Softmax(axis=-1)(logits)
-        with variable_scope('Branch_2'):
-            with name_scope('Up2_1'):
-                branch_2 = upconv_layer(input_tensor=bridge, connection=branch_1_1, filters=512, dropout=dropout)
-            with name_scope('Up2_2'):
-                branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_2, filters=256, dropout=dropout)
-            with name_scope('Up2_3'):
-                branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_3, filters=128, dropout=dropout)
-            with name_scope('Up2_4'):
-                branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=128, dropout=dropout)
 
-            with name_scope('Merger'):
-                output = convolution_layer(input_tensor=branch_2, filters=64, dropout=dropout)
-                output = convolution_layer(input_tensor=output, filters=32, dropout=dropout)
-                output = Conv2D(filters=classes ** 2 - classes + 1, kernel_size=1, padding='same', kernel_initializer=glorot_normal)(output)
-                predictions2 = Softmax(axis=-1)(output)
+    with variable_scope('Model'):
+        with device_1:
+            with variable_scope('Branch_1'):
+                with name_scope('Down_1'):
+                    branch_1, connection_1 = down_layer(input_tensor=input_tensor, filters=64, dropout=dropout)
+                with name_scope('Down_2'):
+                    branch_1, connection_2 = down_layer(input_tensor=branch_1, filters=128, dropout=dropout)
+                with name_scope('Down_3'):
+                    branch_1, connection_3 = down_layer(input_tensor=branch_1, filters=256, dropout=dropout)
+                with name_scope('Down_4'):
+                    branch_1, connection_4 = down_layer(input_tensor=branch_1, filters=512, dropout=dropout)
+                with name_scope('Bridge'):
+                    bridge = convolution_layer(input_tensor=branch_1, filters=1024, dropout=dropout)
+                with name_scope('Up1_1'):
+                    branch_1_1 = upconv_layer(input_tensor=bridge, connection=connection_4, filters=512, dropout=dropout)
+                with name_scope('Up1_2'):
+                    branch_1_2 = upconv_layer(input_tensor=branch_1_1, connection=connection_3, filters=256, dropout=dropout)
+                with name_scope('Up1_3'):
+                    branch_1_3 = upconv_layer(input_tensor=branch_1_2, connection=connection_2, filters=128, dropout=dropout)
+                with name_scope('Up1_4'):
+                    branch_1_4 = upconv_layer(input_tensor=branch_1_3, connection=connection_1, filters=64, dropout=dropout)
+                with name_scope('Output1'):
+                    logits = Conv2D(filters=classes, kernel_size=1, padding='same')(branch_1_4)
+                    predictions1 = Softmax(axis=-1)(logits)
+        with device_2:
+            with variable_scope('Branch_2'):
+                with name_scope('Up2_1'):
+                    branch_2 = upconv_layer(input_tensor=bridge, connection=branch_1_1, filters=512, dropout=dropout)
+                with name_scope('Up2_2'):
+                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_2, filters=256, dropout=dropout)
+                with name_scope('Up2_3'):
+                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_3, filters=128, dropout=dropout)
+                with name_scope('Up2_4'):
+                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=128, dropout=dropout)
+                with name_scope('Merger'):
+                    output = convolution_layer(input_tensor=branch_2, filters=64, dropout=dropout)
+                    output = convolution_layer(input_tensor=output, filters=32, dropout=dropout)
+                    output = Conv2D(filters=classes ** 2 - classes + 1, kernel_size=1, padding='same', kernel_initializer=glorot_normal)(output)
+                    predictions2 = Softmax(axis=-1)(output)
         return predictions1, predictions2
