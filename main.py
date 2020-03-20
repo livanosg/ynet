@@ -23,7 +23,7 @@ PARSER.add_argument('-augp', '--augm_prob', type=float, default=0.5, help='Proba
 PARSER.add_argument('-batch', '--batch_size', type=int, default=2, help='Mini-batch size.')
 
 # Training hyper-parameters
-PARSER.add_argument('-e', '--epochs', type=int, default=200, help='Training epochs.')
+PARSER.add_argument('-e', '--epochs', type=int, default=500, help='Training epochs.')
 PARSER.add_argument('-es', '--early_stop', type=int, default=20, help='Epochs without minimizing target.')
 # Estimator configuration
 PARSER.add_argument('-sd', '--seed', type=int, default=None, help='Random seed.')

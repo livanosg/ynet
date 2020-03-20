@@ -1,7 +1,13 @@
+import glob
+
+import cv2
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.eager import context
+
+from loss_fn import eps
 
 
 def cyclic_learning_rate(global_step,
@@ -124,19 +130,11 @@ def cyclic_learning_rate(global_step,
         return cyclic_lr
 
 
-def f1(y_true, y_pred,):
-
-    y_true = tf.cast(y_true, tf.float64)
-    y_pred = tf.cast(y_pred, tf.float64)
-
-    TP = tf.count_nonzero(y_pred * y_true, axis=0)
-    FP = tf.count_nonzero(y_pred * (y_true - 1), axis=0)
-    FN = tf.count_nonzero((y_pred - 1) * y_true, axis=0)
-    precision = TP / ((TP + FP) + 1)
-    recall = TP / ((TP + FN) + 1)
-    f1 = 2 * precision * recall / (precision + recall)
-    weights = tf.reduce_sum(y_true, axis=0)
-    weights /= tf.reduce_sum(weights)
-    # f1 = tf.reduce_sum(f1 * weights)
-    f1, f1_update_op = tf.metrics.mean(f1)
-    return f1, f1_update_op
+def f1(labels, predictions):  # Macro average
+    # [b, h*w, classes]
+    numerator = tf.reduce_sum(labels * predictions, axis=[1, 2])
+    denominator = tf.reduce_sum(labels + predictions, axis=[1, 2])
+    dice = tf.math.divide(tf.math.add(tf.math.multiply(numerator, 2.), eps), tf.math.add(denominator, eps))
+    dice = tf.reduce_mean(dice, axis=-1)
+    dice, dice_update_op = tf.compat.v1.metrics.mean(dice)
+    return dice, dice_update_op
