@@ -26,15 +26,19 @@ def ynet_model_fn(features, labels, mode, params):
             output_1_arg = tf.math.argmax(output_1, axis=-1)
             output_2_arg = tf.math.argmax(output_2, axis=-1)
         with tf.name_scope('Final_Output_Calculations'):
-            final_output = tf.compat.v2.where(tf.equal(output_2_arg, tf.ones_like(output_2_arg)), output_2_arg, output_1_arg)
+            final_output = tf.compat.v2.where(tf.equal(output_2_arg, tf.ones_like(output_2_arg)), output_2_arg,
+                                              output_1_arg)
             final_output = tf.compat.v2.where(tf.equal(output_2_arg, 2), tf.zeros_like(output_2_arg), final_output)
             one_hot_final_output = tf.one_hot(indices=final_output, depth=2)
         if mode in (estimator.ModeKeys.TRAIN, estimator.ModeKeys.EVAL):
             label_1_arg = tf.math.argmax(labels['label'], -1)
             with tf.name_scope('Second_Branch_Label_Calculations'):
-                label_2_arg = tf.where(tf.equal(label_1_arg, output_1_arg), tf.zeros_like(label_1_arg), tf.ones_like(label_1_arg))
-                label_2_arg = tf.where(tf.greater(output_1_arg, label_1_arg), tf.ones_like(label_1_arg) * 2, label_2_arg)
-                label_2_one_hot = tf.one_hot(indices=tf.cast(label_2_arg, tf.int32), depth=(params['classes'] ** 2) - params['classes'] + 1)
+                label_2_arg = tf.where(tf.equal(label_1_arg, output_1_arg), tf.zeros_like(label_1_arg),
+                                       tf.ones_like(label_1_arg))
+                label_2_arg = tf.where(tf.greater(output_1_arg, label_1_arg), tf.ones_like(label_1_arg) * 2,
+                                       label_2_arg)
+                label_2_one_hot = tf.one_hot(indices=tf.cast(label_2_arg, tf.int32),
+                                             depth=(params['classes'] ** 2) - params['classes'] + 1)
 
             with tf.name_scope('Dice_Score_Calculation'):
                 dice_output_1 = f1(labels=labels['label'], predictions=output_1)
@@ -44,7 +48,8 @@ def ynet_model_fn(features, labels, mode, params):
             with tf.name_scope('Branch_{}_training'.format(params['branch'])):
                 with tf.name_scope('{}'.format(mode)):
                     input_img = tf.math.divide(features['image'] - tf.reduce_max(features['image'], [0, 1, 2]),
-                                               tf.reduce_max(features['image'], [0, 1, 2]) - tf.reduce_min(features['image'], [0, 1, 2]))
+                                               tf.reduce_max(features['image'], [0, 1, 2]) - tf.reduce_min(
+                                                   features['image'], [0, 1, 2]))
                     final_output_img = tf.expand_dims(tf.cast(final_output * 255, dtype=tf.uint8), axis=-1)
                     output_1_img = tf.expand_dims(tf.cast(output_1_arg * 255, dtype=tf.uint8), axis=-1)
                     label_1_img = tf.expand_dims(tf.cast(label_1_arg * 255, dtype=tf.uint8), axis=-1)
@@ -52,7 +57,7 @@ def ynet_model_fn(features, labels, mode, params):
                     summary.image('1_Medical_Image', input_img, max_outputs=1)
                     summary.image('2_Output_1_label', label_1_img, max_outputs=1)
                     summary.image('3_Output_1', output_1_img, max_outputs=1)
-                    summary.image('4_Output_1_preds', tf.expand_dims((output_1[:,:,:,1]),-1), max_outputs=1)
+                    summary.image('4_Output_1_preds', tf.expand_dims((output_1[:, :, :, 1]), -1), max_outputs=1)
                     summary.image('5_Final', final_output_img, max_outputs=1)
                     summary.image('6_Output_2', tf.one_hot(output_2_arg, depth=3), max_outputs=1)
                     summary.image('7_Output_2_preds', output_2, max_outputs=1)
@@ -74,7 +79,8 @@ def ynet_model_fn(features, labels, mode, params):
                                                      step_size=params['steps_per_epoch'] * 5, gamma=0.999994,
                                                      mode='exp_range', name=None)
             with tf.name_scope('Optimizer'):
-                var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_{}/'.format(params['branch']))
+                var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
+                                                       'Model/Branch_{}/'.format(params['branch']))
                 optimizer = Adam(learning_rate=learning_rate)
                 grads = optimizer.compute_gradients(loss=loss, var_list=var_list)
                 train_op = optimizer.apply_gradients(grads_and_vars=grads, global_step=global_step)

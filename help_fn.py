@@ -1,15 +1,9 @@
-import glob
 import os
-
-import cv2
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.eager import context
-
 from config import paths
-from loss_fn import eps
 
 
 def cyclic_learning_rate(global_step,
