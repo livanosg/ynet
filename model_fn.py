@@ -26,8 +26,8 @@ def ynet_model_fn(features, labels, mode, params):
             output_1_arg = tf.math.argmax(output_1, axis=-1)
             output_2_arg = tf.math.argmax(output_2, axis=-1)
         with tf.name_scope('Final_Output_Calculations'):
-            final_output = tf.where_v2(tf.equal(output_2_arg, tf.ones_like(output_2_arg)), output_2_arg, output_1_arg)
-            final_output = tf.where_v2(tf.equal(output_2_arg, 2), tf.zeros_like(output_2_arg), final_output)
+            final_output = tf.compat.v2.where(tf.equal(output_2_arg, tf.ones_like(output_2_arg)), output_2_arg, output_1_arg)
+            final_output = tf.compat.v2.where(tf.equal(output_2_arg, 2), tf.zeros_like(output_2_arg), final_output)
             one_hot_final_output = tf.one_hot(indices=final_output, depth=2)
         if mode in (estimator.ModeKeys.TRAIN, estimator.ModeKeys.EVAL):
             label_1_arg = tf.math.argmax(labels['label'], -1)
@@ -53,16 +53,17 @@ def ynet_model_fn(features, labels, mode, params):
                     summary.image('1_Medical_Image', input_img, max_outputs=1)
                     summary.image('2_Output_1_label', label_1_img, max_outputs=1)
                     summary.image('3_Output_1', output_1_img, max_outputs=1)
-                    summary.image('4_Final', final_output_img, max_outputs=1)
-                    summary.image('5_Output_2', output_2_img, max_outputs=1)
-                    summary.image('6_Output_2_label', label_2_img, max_outputs=1)
+                    summary.image('4_Output_1_preds', tf.expand_dims((output_1[:,:,:,1]),-1), max_outputs=1)
+                    summary.image('5_Final', final_output_img, max_outputs=1)
+                    summary.image('6_Output_2', output_2_img, max_outputs=1)
+                    summary.image('7_Output_2_preds', output_2, max_outputs=1)
+                    summary.image('8_Output_2_label', label_2_one_hot, max_outputs=1)
             if params['branch'] == 1:
                 with tf.name_scope('Loss_Calculation'):
                     loss = custom_loss(predictions=output_1, labels=labels['label'])
             else:
                 with tf.name_scope('Loss_Calculation'):
                     loss = custom_loss(predictions=output_2, labels=label_2_one_hot)
-
     with device_2:
         if mode == estimator.ModeKeys.TRAIN:
             with tf.name_scope('Learning_Rate'):

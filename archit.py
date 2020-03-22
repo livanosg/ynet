@@ -84,8 +84,8 @@ def ynet(input_tensor, params):
                 with name_scope('Up1_4'):
                     branch_1_4 = upconv_layer(input_tensor=branch_1_3, connection=connection_1, filters=64, dropout=dropout)
                 with name_scope('Output1'):
-                    logits = Conv2D(filters=classes, kernel_size=1, padding='same')(branch_1_4)
-                    predictions1 = Softmax(axis=-1)(logits)
+                    output_1 = Conv2D(filters=classes, kernel_size=1, padding='same')(branch_1_4)
+                    predictions1 = Softmax(axis=-1)(output_1)
         with device_2:
             with variable_scope('Branch_2'):
                 with name_scope('Up2_1'):
@@ -95,10 +95,10 @@ def ynet(input_tensor, params):
                 with name_scope('Up2_3'):
                     branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_3, filters=128, dropout=dropout)
                 with name_scope('Up2_4'):
-                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=128, dropout=dropout)
+                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=64, dropout=dropout)
                 with name_scope('Merger'):
-                    output = convolution_layer(input_tensor=branch_2, filters=64, dropout=dropout)
-                    output = convolution_layer(input_tensor=output, filters=32, dropout=dropout)
-                    output = Conv2D(filters=classes ** 2 - classes + 1, kernel_size=1, padding='same', kernel_initializer=glorot_normal)(output)
-                    predictions2 = Softmax(axis=-1)(output)
+                    output_2 = convolution_layer(input_tensor=branch_2, filters=64, dropout=dropout)
+                with name_scope('Output2'):
+                    output_2 = Conv2D(filters=classes ** 2 - classes + 1, kernel_size=1, padding='same', kernel_initializer=glorot_normal)(output_2)
+                    predictions2 = Softmax(axis=-1)(output_2)
         return predictions1, predictions2

@@ -1,4 +1,5 @@
 import glob
+import os
 
 import cv2
 import numpy as np
@@ -7,6 +8,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.eager import context
 
+from config import paths
 from loss_fn import eps
 
 
@@ -132,9 +134,17 @@ def cyclic_learning_rate(global_step,
 
 def f1(labels, predictions):  # Macro average
     # [b, h*w, classes]
-    numerator = tf.reduce_sum(labels * predictions, axis=[1, 2])
-    denominator = tf.reduce_sum(labels + predictions, axis=[1, 2])
-    dice = tf.math.divide(tf.math.add(tf.math.multiply(numerator, 2.), eps), tf.math.add(denominator, eps))
-    dice = tf.reduce_mean(dice, axis=-1)
+    numerator = tf.reduce_sum(labels * predictions, axis=[0, 1, 2])
+    denominator = tf.reduce_sum(labels + predictions, axis=[0, 1, 2])
+    dice = tf.reduce_mean(2. * (numerator + 1) / (denominator + 1))
     dice, dice_update_op = tf.compat.v1.metrics.mean(dice)
     return dice, dice_update_op
+
+
+def get_model_paths(args):
+    trial = 0
+    while os.path.exists(paths['save'] + '/{}_trial_{}'.format(args.modality, trial)):
+        trial += 1
+    model_path = paths['save'] + '/{}_trial_{}'.format(args.modality, trial)
+    eval_path = model_path + '/eval'
+    return model_path, eval_path
