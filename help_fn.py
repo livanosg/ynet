@@ -136,7 +136,7 @@ def f1(labels, predictions):  # Macro average
     # [b, h*w, classes]
     numerator = tf.reduce_sum(labels * predictions, axis=[0, 1, 2])
     denominator = tf.reduce_sum(labels + predictions, axis=[0, 1, 2])
-    dice = tf.reduce_mean(2. * (numerator + 1) / (denominator + 1))
+    dice = 2. * (numerator + 1) / (denominator + 1)
     dice, dice_update_op = tf.compat.v1.metrics.mean(dice)
     return dice, dice_update_op
 
