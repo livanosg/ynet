@@ -72,7 +72,7 @@ def ynet_model_fn(features, labels, mode, params):
                 #                                                      decay_steps=params['decay_steps'],
                 #                                                      decay_rate=params['decay_rate'], staircase=False)
                 learning_rate = cyclic_learning_rate(global_step, learning_rate=params['lr'], max_lr=5 * params['lr'],
-                                                     step_size=params['steps_per_epoch'] * 5, gamma=0.9999,
+                                                     step_size=params['steps_per_epoch'] * 5, gamma=0.999994,
                                                      mode='exp_range', name=None)
             with tf.name_scope('Optimizer'):
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, 'Model/Branch_{}/'.format(params['branch']))
