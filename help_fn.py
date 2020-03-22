@@ -128,9 +128,13 @@ def cyclic_learning_rate(global_step,
 
 def f1(labels, predictions):  # Macro average
     # [b, h*w, classes]
+    class_freq = tf.reduce_sum(labels, axis=[0, 1, 2])
     numerator = tf.reduce_sum(labels * predictions, axis=[0, 1, 2])
+    numerator = tf.where(tf.equal(class_freq, 0), tf.ones_like(numerator), numerator)
     denominator = tf.reduce_sum(labels + predictions, axis=[0, 1, 2])
-    dice = 2. * (numerator + 1) / (denominator + 1)
+    denominator = tf.where(tf.equal(class_freq, 0), tf.ones_like(denominator) * 2, denominator)
+
+    dice = (2. * numerator) / (denominator)
     dice, dice_update_op = tf.compat.v1.metrics.mean(dice)
     return dice, dice_update_op
 

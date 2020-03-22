@@ -16,13 +16,20 @@ def weighted_log_dice_loss(labels, predictions):
     """both tensors are [b, h, w, classes] and y_pred is in probs form"""
 
     class_freq = tf.reduce_sum(labels, axis=[0, 1, 2])  # class freqs for each image batch [b, h, w, classes] => [class_freq]
-    class_freq = tf.math.maximum(class_freq, eps)
-    weights = 1 / class_freq**2
-    numerator = weights * tf.reduce_sum(labels * predictions, axis=[0, 1, 2])  # label * pred = TP of each class
-    denominator = weights * tf.reduce_sum(labels + predictions, axis=[0, 1, 2])  # label + pred = 2 * TP + FP + FN of each class
-    dice = 2. * (numerator/denominator)  # smooth factor eps
-    dice = tf.where(tf.is_finite(-tf.math.log(dice)),  -tf.math.log(dice), -tf.math.log(dice + 1))
-    dice = tf.math.reduce_mean(dice)
+    class_freq_eps = tf.math.maximum(class_freq, eps)
+    weights = 1 / class_freq_eps**2
+    numerator = tf.reduce_sum(labels * predictions, axis=[0, 1, 2])  # label * pred = TP of each class
+    numerator = weights * numerator
+    numerator = tf.where(tf.equal(class_freq, 0), tf.ones_like(numerator), numerator)
+    denominator = tf.reduce_sum(labels + predictions, axis=[0, 1, 2])  # label + pred = 2 * TP + FP + FN of each class
+    denominator = weights * denominator
+    denominator = tf.where(tf.equal(class_freq, 0), tf.ones_like(denominator) * 2, denominator)
+    dice = 2. * (numerator/denominator)
+    with tf.control_dependencies([tf.print(dice)]):
+        dice = -tf.math.log(dice)
+    # dice = tf.where(tf.is_finite(-tf.math.log(dice)),  -tf.math.log(dice), -tf.math.log(dice + 1))
+    with tf.control_dependencies([tf.print(dice)]):
+        dice = tf.math.reduce_mean(dice)
     loss = tf.math.pow(dice, 0.3)
     return loss
 
