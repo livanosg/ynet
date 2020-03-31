@@ -1,9 +1,11 @@
 import os
+
 import tensorflow as tf
+from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
-from tensorflow.python.eager import context
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
+
 from config import paths
 
 

@@ -1,7 +1,7 @@
 import os
-from config import dataset_root
-from shutil import rmtree
 from glob import glob
+
+from config import dataset_root
 
 
 def rmv2(dataset):

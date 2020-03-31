@@ -1,11 +1,13 @@
 import os
-import cv2
 import zipfile
+from glob import glob
+from shutil import rmtree
+
+import cv2
 import numpy as np
 import pydicom as pd
-from glob import glob
+
 from config import setup_paths
-from shutil import rmtree
 
 
 def unzip_ircad():

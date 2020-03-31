@@ -1,5 +1,7 @@
 from os import makedirs
+
 from tensorflow.version import VERSION
+
 from config import root_dir
 
 

@@ -1,4 +1,5 @@
 import os
+
 from config import setup_paths, paths
 from setup_datasets.chaos import unzip_chaos
 from setup_datasets.ircad import setup_ircadb

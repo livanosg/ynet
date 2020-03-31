@@ -1,10 +1,12 @@
+from contextlib import nullcontext
+
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, ReLU
-from tensorflow.keras.layers import Dropout, Concatenate, BatchNormalization
-from tensorflow.keras.initializers import glorot_normal
 from tensorflow import name_scope, shape, slice, concat
 from tensorflow.compat.v1 import variable_scope
-from contextlib import nullcontext
+from tensorflow.keras.initializers import glorot_normal
+from tensorflow.keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, ReLU
+from tensorflow.keras.layers import Dropout, Concatenate, BatchNormalization
+
 
 def conv_bn_dr(input_tensor, filters, dropout=0.):
     conv = Conv2D(filters=filters, kernel_size=(3, 3), padding='same', kernel_initializer=glorot_normal)(input_tensor)

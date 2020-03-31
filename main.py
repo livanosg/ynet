@@ -3,7 +3,7 @@ import argparse
 
 PARSER = argparse.ArgumentParser(description='Train a model according to given hyperparameters.')
 # Mode
-PARSER.add_argument('-M', '--mode', type=str, default='train-and-eval', choices=['train', 'eval', 'pred', 'train-and-eval', 'test', 'lr'],  # TODO EXPORT MODEL
+PARSER.add_argument('-M', '--mode', type=str, default='train-and-eval', choices=['train', 'eval', 'pred', 'train-and-eval', 'test', 'lr', 'chaos-test'],  # TODO EXPORT MODEL
                     help='Define the estimator mode')
 PARSER.add_argument('-nodist', action='store_false', default=True, help='Set distribution mode.')
 PARSER.add_argument('-sd', '--seed', type=int, default=None, help='Random seed.')
@@ -28,6 +28,12 @@ PARSER.add_argument('-es', '--early_stop', type=int, default=35, help='Epochs wi
 ARGS = PARSER.parse_args()
 
 if __name__ == '__main__':
-    # print(ARGS.nodist)
-    from train import estimator_mod
-    estimator_mod(ARGS)
+    if ARGS.mode in ('train', 'test', 'train-and-eval', 'eval'):
+        import train
+        train.training_fn(ARGS)
+    else:
+        import predict_modes
+        if ARGS.mode == 'chaos-test':
+            predict_modes.run_chaos_test(ARGS)
+        if ARGS.mode == 'pred':
+            predict_modes.predict(ARGS)

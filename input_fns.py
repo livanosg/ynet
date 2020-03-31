@@ -1,8 +1,10 @@
-import numpy as np
 from glob import glob
+
+import numpy as np
 import tensorflow as tf
 from cv2.cv2 import imread
 from pydicom import dcmread
+
 from augmentations import Augmentations
 from config import paths
 
@@ -19,18 +21,14 @@ class Input_function:
             self.batch_size = 1
             self.augm_prob = 0.
 
-    def __call__(self, *args, **kwargs):
-        return self.get_dataset()
-
     def __len__(self):
         return len(self.get_dataset_paths())
 
     def get_ct_list(self):
         dirs = {'ct_dcm_paths': '/**/CT/**/**.dcm',
                 'ct_grd_paths': '/**/CT/**/*.png'}
-        for key, value in dirs:
-            dirs[key] = sorted(glob(paths[self.dataset] + value, recursive=True))
-        assert len(dirs['ct_dcm_paths']) == len(dirs['ct_grd_paths'])  # Check lists length
+        for key in dirs.keys():
+            dirs[key] = sorted(glob(paths[self.dataset] + dirs[key], recursive=True))
         return dirs['ct_dcm_paths'], dirs['ct_grd_paths']
 
     def get_mr_list(self):
@@ -40,9 +38,11 @@ class Input_function:
         # noinspection PyUnresolvedReferences
         for key in dirs.keys():
             dirs[key] = sorted(glob(paths[self.dataset] + dirs[key], recursive=True))
-        mr_dicom_list = dirs['mr_dcm_in'] + dirs['mr_dcm_out'] + dirs['mr_dcm_t2']
+        if self.dataset == 'chaos-test':
+            mr_dicom_list = dirs['mr_dcm_in'] + dirs['mr_dcm_t2']  # todo in/out are registered train accordingly
+        else:
+            mr_dicom_list = dirs['mr_dcm_in'] + dirs['mr_dcm_out'] + dirs['mr_dcm_t2']
         mr_ground_list = dirs['mr_grd_t1'] + dirs['mr_grd_t1'] + dirs['mr_grd_t2']
-        assert len(mr_dicom_list) == len(mr_ground_list)  # Check lists length
         return mr_dicom_list, mr_ground_list
 
     # noinspection PyUnboundLocalVariable
@@ -50,6 +50,7 @@ class Input_function:
         if self.modality in ('CT', 'ALL'):
             ct_dicom_list, ct_ground_list = self.get_ct_list()
             if self.dataset in ('train', 'eval'):
+                assert len(ct_dicom_list) == len(ct_ground_list)  # Check lists length
                 ct_data_path_list = list(zip(ct_dicom_list, ct_ground_list))
             else:
                 ct_data_path_list = ct_dicom_list
@@ -58,6 +59,7 @@ class Input_function:
         if self.modality in ('MR', 'ALL'):
             mr_dicom_list, mr_ground_list = self.get_mr_list()
             if self.dataset in ('train', 'eval'):
+                assert len(mr_dicom_list) == len(mr_ground_list)  # Check lists length
                 mr_data_path_list = list(zip(mr_dicom_list, mr_ground_list))
             else:
                 mr_data_path_list = mr_dicom_list
@@ -80,8 +82,10 @@ class Input_function:
                     resize = {'MR': 320 - dicom.shape[0],
                               'ALL': 512 - dicom.shape[0],
                               'CT': 512 - dicom.shape[0]}
-                    dicom = np.pad(dicom, [int(resize[self.modality] / 2)], mode='constant', constant_values=np.min(dicom))
-                    label = np.pad(label, [int(resize[self.modality] / 2)], mode='constant', constant_values=np.min(label))
+                    dicom = np.pad(dicom, [int(resize[self.modality] / 2)], mode='constant',
+                                   constant_values=np.min(dicom))
+                    label = np.pad(label, [int(resize[self.modality] / 2)], mode='constant',
+                                   constant_values=np.min(label))
                     if np.random.random() < self.augm_prob:
                         dicom, label = augmentation(input_image=dicom, label=label)
                 dicom = (dicom - np.mean(dicom)) / np.std(dicom)  # Normalize
@@ -92,28 +96,31 @@ class Input_function:
                 dicom = dcmread(dicom_path).pixel_array
                 yield (dicom - np.mean(dicom)) / np.std(dicom), dicom_path
 
-    def get_dataset(self):
+    def get_tf_generator(self):
         if self.dataset in ('train', 'eval'):
             data_set = tf.data.Dataset.from_generator(generator=lambda: self.dataset_generator(),
                                                       output_types=(tf.float32, tf.int32),
-                                                      output_shapes=(tf.TensorShape([None, None]), tf.TensorShape([None, None])))
-            data_set = data_set.map(lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=self.classes, dtype=tf.float32)))
+                                                      output_shapes=(
+                                                          tf.TensorShape([None, None]), tf.TensorShape([None, None])))
+            data_set = data_set.map(
+                lambda x, y: (x, tf.one_hot(tf.cast(y, tf.int32), depth=self.classes, dtype=tf.float32)))
             data_set = data_set.map(lambda x, y: (tf.expand_dims(tf.cast(x, tf.float32), -1), y))
             data_set = data_set.map(lambda x, y: ({'image': x}, {'label': y}))
             if self.dataset == 'train':
                 data_set = data_set.batch(self.batch_size)
                 data_set = data_set.repeat()
             if self.dataset == 'eval':
-                data_set = data_set.batch(1)
+                data_set = data_set.batch(self.batch_size)
         else:
             data_set = tf.data.Dataset.from_generator(generator=lambda: self.dataset_generator(),
                                                       output_types=(tf.float32, tf.string),
                                                       output_shapes=(
-                                                      tf.TensorShape([None, None]), tf.TensorShape(None)))
+                                                          tf.TensorShape([None, None]), tf.TensorShape(None)))
             data_set = data_set.map(lambda x, y: {'image': tf.expand_dims(x, -1), 'path': tf.cast(y, tf.string)})
             data_set = data_set.batch(self.batch_size)
         data_set = data_set.prefetch(buffer_size=-1)
         return data_set
+
 #  https://github.com/tensorflow/tensorflow/issues/13463
 #  I figured out that you can momentarily get rid of the corrupted error by
 #  cleaning the linux memory cache with the command sudo sh -c "sync; echo 1 > /proc/sys/vm/drop_caches".

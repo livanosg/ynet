@@ -1,11 +1,12 @@
 from contextlib import nullcontext
+
 import tensorflow as tf
-import tensorflow.compat.v1.train
-from tensorflow.python import summary
-from tensorflow.compat.v1 import estimator
-from archit import ynet
+from tensorflow.compat.v1 import train, estimator
+from tensorflow import summary
+
 import help_fn
 import loss_fn
+from archit import ynet
 
 
 # noinspection PyUnboundLocalVariable
@@ -27,16 +28,15 @@ def ynet_model_fn(features, labels, mode, params):
             output_1_categ = tf.math.argmax(preds_1, axis=-1)
             output_2_categ = tf.math.argmax(preds_2, axis=-1)
         with tf.name_scope('Final_Output_Calculations'):
-            # 0 == TN, 1 == FN, 2 == FP, 3 = TP
-            final_output = tf.compat.v2.where(tf.math.logical_or(tf.equal(output_2_categ, 1),  # if 1 or 3 ==> 1
-                                                                 tf.equal(output_2_categ, 3)),  # else      ==> 0
+            # TN = 0, FP = 0, TP = 1, FN = 1
+            final_output = tf.compat.v2.where(tf.math.logical_or(tf.equal(output_2_categ, 1), tf.equal(output_2_categ, 3)),
                                               tf.ones_like(output_2_categ), tf.zeros_like(output_2_categ))
             one_hot_final_output = tf.one_hot(indices=final_output, depth=params['classes'])
         if mode in (estimator.ModeKeys.TRAIN, estimator.ModeKeys.EVAL):
             with tf.name_scope('Label2_Calculations'):
                 label_1_categ = tf.math.argmax(labels['label'], -1)
-                label_2_categ = label_1_categ + (
-                            output_1_categ * params['classes'])  # 0 == TN, 1 == FN, 2 == FP, 3 = TP
+                # TN = 0, FN = 1, FP = 2, TP = 3
+                label_2_categ = label_1_categ + (output_1_categ * params['classes'])
                 label_2_one_hot = tf.one_hot(indices=tf.cast(label_2_categ, tf.int32), depth=(params['classes'] ** 2))
 
             with tf.name_scope('Dice_Score_Calculation'):
@@ -76,7 +76,7 @@ def ynet_model_fn(features, labels, mode, params):
     with device_2:
         if mode == estimator.ModeKeys.TRAIN:
             with tf.name_scope('Learning_Rate'):
-                global_step = tf.compat.v1.train.get_or_create_global_step()
+                global_step = train.get_or_create_global_step()
                 learning_rate = help_fn.cyclic_learning_rate(global_step, learning_rate=params['lr'],
                                                              max_lr=5 * params['lr'],
                                                              step_size=params['steps_per_epoch'] * 5, gamma=0.999991,
@@ -84,11 +84,9 @@ def ynet_model_fn(features, labels, mode, params):
             with tf.name_scope('Optimizer'):
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                                                        'Model/Branch_{}/'.format(params['branch']))
-                train_op = tensorflow.compat.v1.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss=loss,
-                                                                                                          var_list=var_list,
-                                                                                                          global_step=global_step)
-                # grads = optimizer.compute_gradients(loss=loss, var_list=var_list)
-                # train_op = optimizer.apply_gradients(grads_and_vars=grads, global_step=global_step)
+                train_op = train.AdamOptimizer(learning_rate=learning_rate).minimize(loss=loss,
+                                                                                     var_list=var_list,
+                                                                                     global_step=global_step)
             with tf.name_scope('Metrics'):
                 summary.scalar('1_Output_1_DSC', dice_output_1[1])
                 summary.scalar('2_Final_DSC', dice_final[1])
@@ -99,11 +97,9 @@ def ynet_model_fn(features, labels, mode, params):
             eval_metric_ops = {'Metrics/1_Output_1_DSC': dice_output_1, 'Metrics/2_Final_DSC': dice_final,
                                'Metrics/3_Output_2_DSC': dice_output_2}
 
-            eval_summary_hook = tf.estimator.SummarySaverHook(output_dir=params['eval_path'],
-                                                              summary_op=summary.merge_all(),
-                                                              save_steps=params['eval_steps'])
+            eval_summary_hook = estimator.SummarySaverHook(output_dir=params['eval_path'], summary_op=summary.merge_all(),
+                                                           save_steps=params['eval_steps'])
             evaluation_hooks = [eval_summary_hook]
-
     if mode == estimator.ModeKeys.PREDICT:
         predictions_dict = {'image': features['image'],
                             'preds_1': output_1_categ,
