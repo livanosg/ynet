@@ -61,7 +61,8 @@ def training_fn(args):
                        'decay_steps': math.ceil(args.epochs * steps_per_epoch / (args.decays_per_train + 1)),
                        'eval_path': eval_path,
                        'eval_steps': eval_size,
-                       'distribution': args.nodist}
+                       'distribution': args.nodist,
+                       'modality': args.modality}
 
     # TODO use it to define learning rate
     # Global batch size for a step ==> _PER_REPLICA_BATCH_SIZE * strategy.num_replicas_in_sync
