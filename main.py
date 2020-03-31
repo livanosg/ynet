@@ -19,7 +19,7 @@ PARSER.add_argument('-modal', '--modality', type=str, default='CT', choices=['CT
 PARSER.add_argument('-augp', '--augm_prob', type=float, default=0.5, help='Probability for augmented image.')
 PARSER.add_argument('-batch', '--batch_size', type=int, default=2, help='Mini-batch size.')
 # Training hyper-parameters
-PARSER.add_argument('-lr', '--lr', type=float, default=0.000008, help='Learning Rate.')
+PARSER.add_argument('-lr', '--lr', type=float, default=0.00008, help='Learning Rate.')
 PARSER.add_argument('-dc', '--decays_per_train', type=int, default=1, help='Number of learning rate decays in a training session.')
 PARSER.add_argument('-dcr', '--decay_rate', type=float, default=0.1, help='Decay rate for learning rate.')
 PARSER.add_argument('-e', '--epochs', type=int, default=500, help='Training epochs.')
