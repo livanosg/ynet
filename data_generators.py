@@ -3,7 +3,7 @@ import numpy as np
 from glob import glob
 from pydicom import dcmread
 from cv2 import imread
-from augmentations import augmentations
+from augmentations import Augmentations
 from config import paths
 
 
@@ -63,6 +63,7 @@ def data_gen(dataset, params, only_paths=False):
         for dicom_path, label_path in data_paths:
             yield dicom_path, label_path
     else:
+        augmentation = Augmentations()
         for dicom_path, label_path in data_paths:
             dicom, label = dcmread(dicom_path).pixel_array, imread(label_path, 0)
             if 'MR' in label_path:
@@ -76,7 +77,7 @@ def data_gen(dataset, params, only_paths=False):
                     dicom = np.pad(dicom, [int(resize / 2)], mode='constant', constant_values=np.min(dicom))
                     label = np.pad(label, [int(resize / 2)], mode='constant', constant_values=np.min(label))
                 if np.random.random() < params['augm_prob']:
-                    dicom, label = augmentations(dcm_image=dicom, grd_image=label)
+                    dicom, label = augmentation(input_image=dicom, label=label)
 
             dicom = (dicom - np.mean(dicom)) / np.std(dicom)  # Normalize
             label[label > 0] = 1
@@ -85,8 +86,9 @@ def data_gen(dataset, params, only_paths=False):
 
 if __name__ == '__main__':
     params = {'modality': 'CT', 'shuffle': False, 'augm_set': 'all', 'augm_prob': 1.}
-    label_gen = data_gen(dataset='train', params=params)
+    data = data_gen(dataset='train', params=params)
     cv2.namedWindow('Test', cv2.WINDOW_FREERATIO)
-    cv2.namedWindow('Test_1', cv2.WINDOW_FREERATIO)
-    for i, j in label_gen:
-        print(np.max(j))
+    for i, j in data:
+        i = (i - np.min(i)) / (np.max(i) - np.min(i))
+        cv2.imshow('Test', j.astype(np.float))
+        cv2.waitKey()

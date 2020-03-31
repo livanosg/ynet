@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, ReLU, Softmax
+from tensorflow.keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, ReLU
 from tensorflow.keras.layers import Dropout, Concatenate, BatchNormalization
 from tensorflow.keras.initializers import glorot_normal
 from tensorflow import name_scope, shape, slice, concat
@@ -40,6 +40,11 @@ def upconv_layer(input_tensor, connection, filters, dropout=0.):
     trans = trans_conv(input_tensor=input_tensor, filters=filters, dropout=dropout)
     up_conv = Concatenate()([connection, trans])
     return convolution_layer(input_tensor=up_conv, filters=filters // 2, dropout=dropout)
+
+
+def merge_layer(input_tensor, connection, filters, dropout=0.):
+    up_conv = Concatenate()([connection, input_tensor])
+    return convolution_layer(input_tensor=up_conv, filters=filters, dropout=dropout)
 
 
 # noinspection PyShadowingNames
@@ -85,7 +90,6 @@ def ynet(input_tensor, params):
                     branch_1_4 = upconv_layer(input_tensor=branch_1_3, connection=connection_1, filters=64, dropout=dropout)
                 with name_scope('Output1'):
                     output_1 = Conv2D(filters=classes, kernel_size=1, padding='same')(branch_1_4)
-                    predictions1 = Softmax(axis=-1)(output_1)
         with device_2:
             with variable_scope('Branch_2'):
                 with name_scope('Up2_1'):
@@ -97,8 +101,7 @@ def ynet(input_tensor, params):
                 with name_scope('Up2_4'):
                     branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=64, dropout=dropout)
                 with name_scope('Merger'):
-                    output_2 = convolution_layer(input_tensor=branch_2, filters=64, dropout=dropout)
+                    branch_2 = merge_layer(input_tensor=branch_2, connection=output_1, filters=32, dropout=dropout)
                 with name_scope('Output2'):
-                    output_2 = Conv2D(filters=classes ** 2 - classes + 1, kernel_size=1, padding='same', kernel_initializer=glorot_normal)(output_2)
-                    predictions2 = Softmax(axis=-1)(output_2)
-        return predictions1, predictions2
+                    output_2 = Conv2D(filters=classes ** 2, kernel_size=1, padding='same', kernel_initializer=glorot_normal)(branch_2)
+        return output_1, output_2
