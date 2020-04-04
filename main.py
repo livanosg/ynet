@@ -5,7 +5,6 @@ PARSER = argparse.ArgumentParser(description='Train a model according to given h
 # Mode
 PARSER.add_argument('-M', '--mode', type=str, default='train-and-eval', choices=['train', 'eval', 'pred', 'train-and-eval', 'test', 'lr', 'chaos-test'],  # TODO EXPORT MODEL
                     help='Define the estimator mode')
-PARSER.add_argument('-nodist', action='store_false', default=True, help='Set distribution mode.')
 PARSER.add_argument('-sd', '--seed', type=int, default=None, help='Random seed.')
 
 # Model options

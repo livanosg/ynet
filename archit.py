@@ -1,14 +1,10 @@
 from contextlib import nullcontext
-
-import numpy as np
 import tensorflow as tf
 from tensorflow import name_scope, shape, slice, concat
 from tensorflow.compat.v1 import variable_scope
 from tensorflow.keras.initializers import glorot_normal
 from tensorflow.keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, ReLU
 from tensorflow.keras.layers import Dropout, Concatenate, BatchNormalization
-from tensorflow.python.keras import Input, Model
-from tensorflow.python.keras.utils import plot_model
 
 
 def conv_bn_dr(input_tensor, filters, dropout=0., padding='same'):
@@ -75,46 +71,44 @@ def ynet(input_tensor, params):
 
     with variable_scope('Model'):
         with device_1:
-            with variable_scope('Branch_1'):
-                with name_scope('Down_1'):
-                    branch_1, connection_1 = down_layer(input_tensor=input_tensor, filters=64, dropout=dropout)
-                with name_scope('Down_2'):
-                    branch_1, connection_2 = down_layer(input_tensor=branch_1, filters=128, dropout=dropout)
-                with name_scope('Down_3'):
-                    branch_1, connection_3 = down_layer(input_tensor=branch_1, filters=256, dropout=dropout)
-                with name_scope('Down_4'):
-                    branch_1, connection_4 = down_layer(input_tensor=branch_1, filters=512, dropout=dropout)
-                with name_scope('Bridge'):
-                    bridge = convolution_layer(input_tensor=branch_1, filters=1024, dropout=dropout)
-                with name_scope('Up1_1'):
-                    branch_1_1 = upconv_layer(input_tensor=bridge, connection=connection_4, filters=512,
-                                              dropout=dropout)
-                with name_scope('Up1_2'):
-                    branch_1_2 = upconv_layer(input_tensor=branch_1_1, connection=connection_3, filters=256,
-                                              dropout=dropout)
-                with name_scope('Up1_3'):
-                    branch_1_3 = upconv_layer(input_tensor=branch_1_2, connection=connection_2, filters=128,
-                                              dropout=dropout)
-                with name_scope('Up1_4'):
-                    branch_1_4 = upconv_layer(input_tensor=branch_1_3, connection=connection_1, filters=64,
-                                              dropout=dropout)
-                with name_scope('Up1_Output'):
-                    output_1 = Conv2D(filters=classes, kernel_size=1, padding='same')(branch_1_4)
+            with name_scope('Branch1_D1'):
+                branch_1, connection_1 = down_layer(input_tensor=input_tensor, filters=32, dropout=dropout)
+            with name_scope('Branch1_D2'):
+                branch_1, connection_2 = down_layer(input_tensor=branch_1, filters=64, dropout=dropout)
+            with name_scope('Branch1_D3'):
+                branch_1, connection_3 = down_layer(input_tensor=branch_1, filters=128, dropout=dropout)
+            with name_scope('Branch1_D4'):
+                branch_1, connection_4 = down_layer(input_tensor=branch_1, filters=256, dropout=dropout)
+            with name_scope('Branch1_Bridge'):
+                bridge = convolution_layer(input_tensor=branch_1, filters=512, dropout=dropout)
+            with name_scope('Branch1_U1'):
+                branch_1_1 = upconv_layer(input_tensor=bridge, connection=connection_4, filters=256,
+                                          dropout=dropout)
+            with name_scope('Branch1_U2'):
+                branch_1_2 = upconv_layer(input_tensor=branch_1_1, connection=connection_3, filters=128,
+                                          dropout=dropout)
+            with name_scope('Branch1_U3'):
+                branch_1_3 = upconv_layer(input_tensor=branch_1_2, connection=connection_2, filters=64,
+                                          dropout=dropout)
+            with name_scope('Branch1_U4'):
+                branch_1_4 = upconv_layer(input_tensor=branch_1_3, connection=connection_1, filters=32,
+                                          dropout=dropout)
+            with name_scope('Branch1_Output'):
+                output_1 = Conv2D(filters=classes, kernel_size=1, padding='same')(branch_1_4)
         with device_2:
-            with variable_scope('Branch_2'):
-                with name_scope('Up2_1'):
-                    branch_2 = upconv_layer(input_tensor=bridge, connection=branch_1_1, filters=512, dropout=dropout)
-                with name_scope('Up2_2'):
-                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_2, filters=256, dropout=dropout)
-                with name_scope('Up2_3'):
-                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_3, filters=128, dropout=dropout)
-                with name_scope('Up2_4'):
-                    branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=64, dropout=dropout)
-                with name_scope('Merger'):
-                    branch_2 = merge_layer(input_tensor=branch_2, connection=output_1, filters=32, dropout=dropout)
-                with name_scope('Output2'):
-                    output_2 = Conv2D(filters=classes ** 2, kernel_size=1, padding='same',
-                                      kernel_initializer=glorot_normal)(branch_2)
+            with name_scope('Branch2_U1'):
+                branch_2 = upconv_layer(input_tensor=bridge, connection=branch_1_1, filters=256, dropout=dropout)
+            with name_scope('Branch2_U2'):
+                branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_2, filters=128, dropout=dropout)
+            with name_scope('Branch2_U3'):
+                branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_3, filters=64, dropout=dropout)
+            with name_scope('Branch2_U4'):
+                branch_2 = upconv_layer(input_tensor=branch_2, connection=branch_1_4, filters=32, dropout=dropout)
+            with name_scope('Branch2_Merger'):
+                branch_2 = merge_layer(input_tensor=branch_2, connection=output_1, filters=16, dropout=dropout)
+            with name_scope('Branch2_Output'):
+                output_2 = Conv2D(filters=classes ** 2, kernel_size=1, padding='same',
+                                  kernel_initializer=glorot_normal)(branch_2)
         return output_1, output_2
 
 
@@ -126,11 +120,6 @@ def incept_ynet(input_tensor, params):
         input_shape = [320, 320, 3]
     dropout = params['dropout']
     classes = params['classes']
-    if params['distribution']:
-        device_1 = device_2 = nullcontext()
-    else:
-        device_1 = tf.device('/GPU:0')
-        device_2 = tf.device('/GPU:1')
     with variable_scope('Model'):
         with name_scope('Inception_v3'):
             inception_v3 = tf.keras.applications.inception_v3.InceptionV3(include_top=False, weights='imagenet',
@@ -299,10 +288,3 @@ def incept_ynet(input_tensor, params):
             output_2 = Conv2D(filters=classes ** 2, kernel_size=1, padding='same', kernel_initializer=glorot_normal)(up_2_4)
 
     return output_1, output_2
-
-
-if __name__ == '__main__':
-    params = {'modality': 'CT', 'dropout': 0.5, 'classes': 2, 'distribution': True}
-    input_tensor = tf.Variable(initial_value=np.random.random([1, 512, 512, 3]).astype(np.float32))
-    incept_ynet(input_tensor, params).summary()
-    # plot_model(incept_ynet(input_tensor, params), show_shapes=True, show_layer_names=True)

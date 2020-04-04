@@ -17,11 +17,9 @@ def training_fn(args):
     # os.environ['TF_XLA_FLAGS'] = "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit " + config.root_dir
     os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     warm_start = None
-    strategy = None
     session_config = tf.compat.v1.ConfigProto(allow_soft_placement=True)  # If op cannot be executed on GPU ==> CPU.
     session_config.gpu_options.allow_growth = True  # Allow full memory usage of GPU.
-    if not args.nodist:
-        strategy = tf.distribute.MirroredStrategy()
+    strategy = tf.distribute.MirroredStrategy()
     if args.load_model:
         load_path = config.paths['save'] + '/' + args.load_model
         if args.resume:

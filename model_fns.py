@@ -20,7 +20,7 @@ def ynet_model_fn(features, labels, mode, params):
     loss, train_op, = None, None
     eval_metric_ops, training_hooks, evaluation_hooks = None, None, None
     predictions_dict = None
-    logits_1, logits_2 = incept_ynet(input_tensor=tf.concat([features['image']]*3, axis=-1), params=params)
+    logits_1, logits_2 = ynet(input_tensor=tf.concat([features['image']]*3, axis=-1), params=params)
     preds_1 = tf.math.softmax(logits_1, -1)
     preds_2 = tf.math.softmax(logits_2, -1)
     with device_1:
@@ -83,7 +83,7 @@ def ynet_model_fn(features, labels, mode, params):
                                                              mode='exp_range', name=None)
             with tf.name_scope('Optimizer'):
                 var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
-                                                       'Model/Up{}'.format(params['branch']))
+                                                       'Model/Branch{}'.format(params['branch']))
                 train_op = train.AdamOptimizer(learning_rate=learning_rate).minimize(loss=loss,
                                                                                      var_list=var_list,
                                                                                      global_step=global_step)
